@@ -13,7 +13,7 @@ matplotlib.use("Qt5Agg")
 sys_ivs800 = True  # Set as True if taken by IVS-800
 gpu_proc = False
 root = r"E:\Data_2024\20240626_jurkat\mv-11.5hr"  # Folder path which containing the raw Data
-DataId = "Storage_20240627_11h38m18s.dat"
+DataId = "Storage_20240627_11h37m05s.dat"
 
 save_view = False  # Set as True if save dB-OCT img as 3D stack file for view
 save_video = False  # (Only for dtype='timelapse') set as True if save Int_view img as .mp4
@@ -64,7 +64,7 @@ for index in tqdm(range(dim_y)):
     if dataType == 'timelapse':
         if sys_ivs800:
             with open(DataFold, mode='rb') as file:  # IVS-800: dtype='>f4'
-                data = np.fromfile(file, dtype='>f4', count=dim_x * dim_z, offset=(index * dim_x * dim_z + 128) * 4)
+                data = np.fromfile(file, dtype='>f4', count=dim_x * dim_z, offset=(index * dim_x * dim_z + 64) * 4)  # 128
             if data.size < (dim_x * dim_z):
                 break
             octImg = data.reshape(dim_x, dim_z).T
