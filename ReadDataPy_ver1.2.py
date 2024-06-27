@@ -1,23 +1,25 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import tifffile
 from configparser import ConfigParser
 import cv2
 from scipy.ndimage import zoom
 from tqdm.auto import tqdm
+matplotlib.use("Qt5Agg")
 
 
-root = r"J:\Data_2024\20240619_FishRBC+PBMC\Time5_PBMC_1625"  # Folder path which containing the raw Data
-DataId = "Storage_20240619_16h22m26s.dat"
 sys_ivs800 = True  # Set as True if taken by IVS-800
+root = r"E:\Data_2024\20240626_jurkat\mv-11.5hr"  # Folder path which containing the raw Data
+DataId = "Storage_20240627_11h38m18s.dat"
 
-save_view = False  # Set as True if save dB-OCT img as 3D stack file for view
-save_video = True  # (Only for dtype='timelapse') set as True if save Int_view img as .mp4
+save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
+save_video = False  # (Only for dtype='timelapse') set as True if save Int_view img as .mp4
 display_proc = False  # Set as True if monitor img during converting
 
 save_tif = False  # Set as True if save intensity img as 3D stack .tiff file in the current folder
 octRangedB = [-10, 70]  # set dynamic range of log OCT signal display
-if sys_ivs800:  octRangedB = [-20, 20]
+if sys_ivs800:  octRangedB = [-25, 20]
 DataFold = root + '\\' + DataId  # Raw data file name, usually it is Data.bin
 dataType = None
 [dim_y, dim_z, dim_x,FrameRate] = [0, 0, 0, 30]
@@ -71,7 +73,7 @@ for index in tqdm(range(dim_y)):
     elif dataType == '3d':
         octImg = vol[index, :, :].T
 
-    res_octImg = zoom(octImg, [1, aspect_ratio], order=0)
+    res_octImg = zoom(octImg, [1, aspect_ratio], order=1)
     if save_view or save_tif:
         octImgVol[index, :, :] = res_octImg
     if save_video and dataType == 'timelapse':
@@ -92,7 +94,7 @@ for index in tqdm(range(dim_y)):
         # plt.figure(2); plt.clf();  plt.plot(octImg[10, :])
 
 if save_view:
-    if dataType == '3d': res_octImgVol = zoom(octImgVol, [aspect_ratio, 1, 1], order=0)
+    if dataType == '3d': res_octImgVol = zoom(octImgVol, [aspect_ratio, 1, 1], order=1)
     elif dataType == 'timelapse': res_octImgVol = octImgVol
     octImgView = (np.clip((res_octImgVol - octRangedB[0]) / (octRangedB[1] - octRangedB[0]),0, 1) * 255).astype(dtype='uint8')
     tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + dataType + '_view.tif', np.rollaxis(octImgView[:, :, :], 0,1))
@@ -102,6 +104,3 @@ if save_video and dataType == 'timelapse':
     out.release();     cv2.destroyAllWindows()
 
 #######
-# res = cv2.resize(octImg, dsize=(int(1*dim_x), dim_z), interpolation=cv2.INTER_NEAREST, dtype=octImg.dtype)
-# res_octImg = zoom(octImg,[1, aspect_ratio])
-# plt.figure(5); plt.clf(); plt.imshow(res_octImg, cmap='gray', vmin=octRangedB[0], vmax=octRangedB[1])
