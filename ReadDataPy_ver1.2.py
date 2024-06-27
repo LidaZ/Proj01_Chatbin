@@ -6,18 +6,22 @@ from configparser import ConfigParser
 import cv2
 from scipy.ndimage import zoom
 from tqdm.auto import tqdm
+import cupy as cp
 matplotlib.use("Qt5Agg")
 
 
 sys_ivs800 = True  # Set as True if taken by IVS-800
+gpu_proc = False
 root = r"E:\Data_2024\20240626_jurkat\mv-11.5hr"  # Folder path which containing the raw Data
 DataId = "Storage_20240627_11h38m18s.dat"
 
-save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
+save_view = False  # Set as True if save dB-OCT img as 3D stack file for view
 save_video = False  # (Only for dtype='timelapse') set as True if save Int_view img as .mp4
-display_proc = False  # Set as True if monitor img during converting
+display_proc = True  # Set as True if monitor img during converting
 
 save_tif = False  # Set as True if save intensity img as 3D stack .tiff file in the current folder
+if gpu_proc:
+    import cupy as np; from cupyx.scipy.ndimage import zoom
 octRangedB = [-10, 70]  # set dynamic range of log OCT signal display
 if sys_ivs800:  octRangedB = [-25, 20]
 DataFold = root + '\\' + DataId  # Raw data file name, usually it is Data.bin
@@ -89,7 +93,9 @@ for index in tqdm(range(dim_y)):
         if dataType == 'timelapse':
             plt.text(0, -10, 'frame = ' + str(index+1) + ' / ' + str(dim_y) + ' ,  '
                      + 'time = ' + str(round(1/FrameRate*index, 2)) + ' s')
-        plt.imshow(res_octImg, cmap='gray', vmin=octRangedB[0], vmax=octRangedB[1])
+        if gpu_proc: res_octImg_plt = res_octImg.get().astype(float)
+        else: res_octImg_plt = res_octImg
+        plt.imshow(res_octImg_plt, cmap='gray', vmin=octRangedB[0], vmax=octRangedB[1])
         plt.pause(0.01)
         # plt.figure(2); plt.clf();  plt.plot(octImg[10, :])
 
