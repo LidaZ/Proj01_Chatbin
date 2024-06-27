@@ -6,7 +6,6 @@ from configparser import ConfigParser
 import cv2
 from scipy.ndimage import zoom
 from tqdm.auto import tqdm
-import cupy as cp
 matplotlib.use("Qt5Agg")
 
 
