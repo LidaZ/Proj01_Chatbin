@@ -1,11 +1,11 @@
-from segment_anything import SamPredictor, sam_model_registry
 # import pyDeepP2SA as p2sa
 import numpy as np
 import matplotlib.pyplot as plt
 # import tifffile
 import imagej
 import pandas
-
+import matplotlib
+matplotlib.use("Qt5Agg")
 
 # root = r"J:\Bayer Data\ProductY_5M"
 # DataId = "bscan_ivs2k_5m.tif"
@@ -45,26 +45,39 @@ sys_ivs800 = True
 
 pix_sep = 5  # 5um/pix isotropic pix separation in IVS-2000-HR
 if sys_ivs800: pix_sep = 2  # 2um/pix for IVS-800
+plt.close(11); plt.figure(11, figsize=(13, 4));  plt.clf()
 
-df = pandas.read_csv(r"C:\Users\lzhu\Desktop\Results.csv")
-size_list = df['Area'][:]; dia_list = df['Feret'][:]; meanInt_list = df['Mean'][:]; circ_list = df['Round'][:]
-min_dia_list = df['MinFeret'][:]  # only for test 'Particle by IVS800' avoid influence from multi reflection in bead
+
+excelpath = r"E:\Data_2024\20240626_jurkat\mv-3hr\3DAnalysis\Statistics for Data_3d_view.csv"
+df = pandas.read_csv(excelpath)
+if 'mv' in excelpath: ptcolor = 'green'
+elif 'lv' in excelpath: ptcolor = 'red'
+elif 'hv' in excelpath: ptcolor = 'gray'
+# size_list = df['Area'][:]; dia_list = df['Feret'][:]; meanInt_list = df['Mean'][:]; circ_list = df['Round'][:]
+# min_dia_list = df['MinFeret'][:]  # only for test 'Particle by IVS800' avoid influence from multi reflection in bead
+meanInt_list = df['Mean'][:]
+if 'Mean dist. to surf. (pixel)' in df.columns:  dia_list = df['Mean dist. to surf. (pixel)'][:]
+elif 'Mean dist. to surf. ( )' in df.columns:  dia_list = df['Mean dist. to surf. ( )'][:]
+if 'SD dist. to surf. (pixel)' in df.columns: circ_list = df['SD dist. to surf. (pixel)'][:]
+elif 'SD dist. to surf. ( )' in df.columns:  circ_list = df['SD dist. to surf. ( )'][:]
 total_cnt =np.shape(df)[0]
 # # # mean intensity histogram
-plt.close(11); plt.figure(11, figsize=(13, 4));  plt.clf()
-plt.subplot(1,3,1).cla()
+plt.subplot(1,3,1)#.cla()
 meanInt = meanInt_list / 255
 sufix = '(-10~70 dB)'
-plt.hist(meanInt, facecolor='gray', bins=30, range=[0, 0.7]); plt.title('Mean Intensity per cell')
-if sys_ivs800: sufix = '(-20~40 dB)'
+if sys_ivs800: sufix = '(-25~20 dB)'
+plt.hist(meanInt, facecolor=ptcolor, bins=50, range=[0.1, 0.5], alpha=0.35); plt.title('Mean Intensity per cell')
 plt.xlabel('Normalize intensity' + sufix); plt.ylabel('Count')
 plt.pause(0.01)
 # # # size histogram
-plt.subplot(1,3,2).cla()
-diameter = min_dia_list * pix_sep
-plt.hist(diameter, facecolor='gray', bins=30, range=[1, 50]); plt.title('Diameter per cell'); plt.xlabel('Diameter (um)'); #plt.ylabel('Count')
+plt.subplot(1,3,2)#.cla()
+diameter = dia_list * pix_sep
+plt.hist(diameter, facecolor=ptcolor, bins=50, range=[1, 45], alpha=0.35); plt.title('Mean size per cell'); plt.xlabel('Diameter (um)'); #plt.ylabel('Count')
 plt.pause(0.01)
 # # # circularity histogram
-plt.subplot(1,3,3).cla()
-plt.hist(circ_list, facecolor='gray', bins=30, range=[0, 1]); plt.title('Roundness per cell'); plt.xlabel('Roundness (A.u.)'); #plt.ylabel('Count')
+plt.subplot(1,3,3)#.cla()
+plt.hist(circ_list, facecolor=ptcolor, bins=50, range=[0, 5], alpha=0.35); plt.title('STD of diameter per cell'); plt.xlabel('Roundness (A.u.)'); #plt.ylabel('Count')
 plt.pause(0.01)
+
+# plt.legend()
+print('Cell count number is ', total_cnt)
