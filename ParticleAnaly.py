@@ -48,11 +48,12 @@ if sys_ivs800: pix_sep = 2  # 2um/pix for IVS-800
 plt.close(11); plt.figure(11, figsize=(13, 4));  plt.clf()
 
 
-excelpath = r"E:\Data_2024\20240626_jurkat\mv-3hr\3DAnalysis\Statistics for Data_3d_view.csv"
+excelpath = r"F:\Data_2024\20240626_jurkat\mv-3hr\3DAnalysis\Statistics for Data_3d_view.csv"
 df = pandas.read_csv(excelpath)
 if 'mv' in excelpath: ptcolor = 'green'
 elif 'lv' in excelpath: ptcolor = 'red'
 elif 'hv' in excelpath: ptcolor = 'gray'
+else: ptcolor = 'gray'
 # size_list = df['Area'][:]; dia_list = df['Feret'][:]; meanInt_list = df['Mean'][:]; circ_list = df['Round'][:]
 # min_dia_list = df['MinFeret'][:]  # only for test 'Particle by IVS800' avoid influence from multi reflection in bead
 meanInt_list = df['Mean'][:]
