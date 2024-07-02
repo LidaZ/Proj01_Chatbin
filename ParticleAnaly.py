@@ -1,7 +1,8 @@
 # import pyDeepP2SA as p2sa
 import numpy as np
 import matplotlib.pyplot as plt
-# import tifffile
+import tifffile
+import gc
 import imagej
 import pandas
 import matplotlib
@@ -42,13 +43,19 @@ matplotlib.use("Qt5Agg")
 # plt.figure(10); plt.clf(); plt.imshow(I, cmap='gray'); plt.pause(0.01)
 
 sys_ivs800 = True
-
 pix_sep = 5  # 5um/pix isotropic pix separation in IVS-2000-HR
 if sys_ivs800: pix_sep = 2  # 2um/pix for IVS-800
 plt.close(11); plt.figure(11, figsize=(13, 4));  plt.clf()
 
 
-excelpath = r"F:\Data_2024\20240626_jurkat\mv-3hr\3DAnalysis\Statistics for Data_3d_view.csv"
+folderPath = r"F:\Data_2024\20240626_jurkat\mv-1hr\3DAnalysis"
+analyExcel = "Statistics for Data_3d_view" + ".csv"
+stackImg = "Data_3d_view" + ".tif"
+excelpath = folderPath + "\\" + analyExcel;  stackpath = folderPath + "\\" + stackImg
+# ### read stack size
+I = tifffile.imread(stackpath);  dim_y, dim_z, dim_x = I.shape;  del I;  gc.collect
+spas = (dim_y*pix_sep/1000)*(dim_x*pix_sep/1000)*(dim_z*1.9/1000) / 1000 # 1000 mm^2 -> 1 mL
+###
 df = pandas.read_csv(excelpath)
 if 'mv' in excelpath: ptcolor = 'green'
 elif 'lv' in excelpath: ptcolor = 'red'
@@ -67,18 +74,21 @@ plt.subplot(1,3,1)#.cla()
 meanInt = meanInt_list / 255
 sufix = '(-10~70 dB)'
 if sys_ivs800: sufix = '(-25~20 dB)'
-plt.hist(meanInt, facecolor=ptcolor, bins=50, range=[0.1, 0.5], alpha=0.35); plt.title('Mean Intensity per cell')
-plt.xlabel('Normalize intensity' + sufix); plt.ylabel('Count')
-plt.pause(0.01)
+plt.hist(meanInt, facecolor=ptcolor, bins=50, range=[0.1, 0.5], alpha=0.35, density=True); plt.title('Mean Intensity per cell')
+plt.xlabel('Normalize intensity' + sufix); plt.ylabel('Density')
+plt.axis([0.1, 0.45, 0, 30]); plt.pause(0.01)
 # # # size histogram
 plt.subplot(1,3,2)#.cla()
 diameter = dia_list * pix_sep
-plt.hist(diameter, facecolor=ptcolor, bins=50, range=[1, 45], alpha=0.35); plt.title('Mean size per cell'); plt.xlabel('Diameter (um)'); #plt.ylabel('Count')
+plt.hist(diameter, facecolor=ptcolor, bins=50, range=[1, 40], alpha=0.35, density=True); plt.title('Mean size per cell');
+plt.xlabel('Diameter (um)'); plt.axis([0, 40, 0, 0.35])
 plt.pause(0.01)
 # # # circularity histogram
 plt.subplot(1,3,3)#.cla()
-plt.hist(circ_list, facecolor=ptcolor, bins=50, range=[0, 5], alpha=0.35); plt.title('STD of diameter per cell'); plt.xlabel('Roundness (A.u.)'); #plt.ylabel('Count')
+plt.hist(circ_list, facecolor=ptcolor, bins=50, range=[0, 5], alpha=0.35, density=True); plt.title('STD of diameter per cell');
+plt.xlabel('Regularity (A.u.)'); plt.axis([0, 5, 0, 1.75])
+
+# plt.text(1, 2.2, 'Cell count number is ' + f"{total_cnt/spas:.2E}" + "/mL")
+print('Cell count number is ' + f"{total_cnt/spas:.2E}" + "/mL")
 plt.pause(0.01)
 
-# plt.legend()
-print('Cell count number is ', total_cnt)
