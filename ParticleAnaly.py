@@ -48,7 +48,7 @@ if sys_ivs800: pix_sep = 2  # 2um/pix for IVS-800
 plt.close(11); plt.figure(11, figsize=(13, 4));  plt.clf()
 
 
-folderPath = r"F:\Data_2024\20240626_jurkat\mv-1hr\3DAnalysis"
+folderPath = r"F:\Data_2024\20240626_jurkat\mv-3hr\3DAnalysis"
 analyExcel = "Statistics for Data_3d_view" + ".csv"
 stackImg = "Data_3d_view" + ".tif"
 excelpath = folderPath + "\\" + analyExcel;  stackpath = folderPath + "\\" + stackImg
