@@ -1,0 +1,5 @@
+
+*.pth
+/.idea
+.idea/misc.xml
+.idea/Proj01_Chatbin.iml
