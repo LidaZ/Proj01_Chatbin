@@ -41,6 +41,7 @@ matplotlib.use("Qt5Agg")
 # result = ij.py.run_macro(macrotest)
 ####################
 # plt.figure(10); plt.clf(); plt.imshow(I, cmap='gray'); plt.pause(0.01)
+# # # # # # # # # # # # # # # # # # 
 
 sys_ivs800 = True
 pix_sep = 5  # 5um/pix isotropic pix separation in IVS-2000-HR
@@ -48,7 +49,7 @@ if sys_ivs800: pix_sep = 2  # 2um/pix for IVS-800
 plt.close(11); plt.figure(11, figsize=(13, 4));  plt.clf()
 
 
-folderPath = r"F:\Data_2024\20240626_jurkat\mv-3hr\3DAnalysis"
+folderPath = r"F:\Data_2024\20240626_jurkat\mv-0hr\3D particle analysis"
 analyExcel = "Statistics for Data_3d_view" + ".csv"
 stackImg = "Data_3d_view" + ".tif"
 excelpath = folderPath + "\\" + analyExcel;  stackpath = folderPath + "\\" + stackImg
@@ -78,10 +79,10 @@ plt.hist(meanInt, facecolor=ptcolor, bins=50, range=[0.1, 0.5], alpha=0.35, dens
 plt.xlabel('Normalize intensity' + sufix); plt.ylabel('Density')
 plt.axis([0.1, 0.45, 0, 30]); plt.pause(0.01)
 # # # size histogram
-plt.subplot(1,3,2)#.cla()
+ax = plt.subplot(1,3,2)#.cla()
 diameter = dia_list * pix_sep
 plt.hist(diameter, facecolor=ptcolor, bins=50, range=[1, 40], alpha=0.35, density=True); plt.title('Mean size per cell');
-plt.xlabel('Diameter (um)'); plt.axis([0, 40, 0, 0.35])
+plt.xlabel('Diameter (um)'); ax.set_xscale('log') #plt.axis([0, 40, 0, 0.35])
 plt.pause(0.01)
 # # # circularity histogram
 plt.subplot(1,3,3)#.cla()
@@ -92,3 +93,4 @@ plt.xlabel('Regularity (A.u.)'); plt.axis([0, 5, 0, 1.75])
 print('Cell count number is ' + f"{total_cnt/spas:.2E}" + "/mL")
 plt.pause(0.01)
 
+# # # # # # # # # # # # # #
