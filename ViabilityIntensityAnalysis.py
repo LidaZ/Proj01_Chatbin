@@ -13,6 +13,7 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 
 
+
 # folderPath_hv = r"F:\Data_2024\20240626_jurkat\hv-0hr\3D particle analysis"
 folderPath_lv = r"F:\Data_2024\20240626_jurkat\lv-4hr\3D particle analysis"
 folderPath_mv = r"F:\Data_2024\20240626_jurkat\mv-4hr\3D particle analysis"
@@ -21,7 +22,9 @@ analyExcel = "Statistics for Data_3d_view" + ".csv"
 excelpath_lv = folderPath_lv + "\\" + analyExcel
 excelpath_mv = folderPath_mv + "\\" + analyExcel
 
-# # # # # # # # # mean intensity # # # # # # # # #
+# # - - - - - - - read parameters from .csv by "3D object counter" - - - - - - - - -
+# # - - - - - - - macro available in \Fiji_macro\20240628_Auto3DJurkatAnaly.ijm - -
+# # # mean intensity
 # df = pandas.read_csv(excelpath_hv);  meanInt_list_hv = df['Mean'][:];  ptcolor = 'gray'
 df = pandas.read_csv(excelpath_lv);  meanInt_list_lv = df['Mean'][:];  ptcolor = 'red'
 df = pandas.read_csv(excelpath_mv);  meanInt_list_mv = df['Mean'][:];  ptcolor = 'green'
@@ -29,7 +32,7 @@ df = pandas.read_csv(excelpath_mv);  meanInt_list_mv = df['Mean'][:];  ptcolor =
 # df = pandas.read_csv(excelpath_hv); dia_list_hv = (df['B-width'][:] + df['B-depth'][:]) / 2
 df = pandas.read_csv(excelpath_lv);  dia_list_lv = (df['B-width'][:]) #+ df['B-depth'][:]) / 2
 df = pandas.read_csv(excelpath_mv);  dia_list_mv = (df['B-width'][:]) #+ df['B-depth'][:]) / 2
-# # # # # # # # # std of diameter (super linear to mean diameter, seems not useful) # # # # # #
+# # # std of diameter (super linear to mean diameter, seems not useful)
 # # df = pandas.read_csv(excelpath_hv);  ptcolor = 'gray'
 # # if 'SD dist. to surf. (pixel)' in df.columns: circ_list_hv = df['SD dist. to surf. (pixel)'][:]
 # # elif 'SD dist. to surf. ( )' in df.columns:  circ_list_hv = df['SD dist. to surf. ( )'][:]
@@ -39,39 +42,44 @@ df = pandas.read_csv(excelpath_mv);  dia_list_mv = (df['B-width'][:]) #+ df['B-d
 # df = pandas.read_csv(excelpath_mv);  ptcolor = 'green'
 # if 'Mean dist. to surf. (pixel)' in df.columns:  circ_list_mv = df['Mean dist. to surf. (pixel)'][:]
 # elif 'Mean dist. to surf. ( )' in df.columns:  circ_list_mv = df['Mean dist. to surf. ( )'][:]
-# # # # # # # # # # # # x,z,y size (side length of bounding box) of object # # # # # # # # # # # #
+# # # x,z,y size (side length of bounding box) of object
 # df = pandas.read_csv(excelpath_hv);  asp_ratio_hv = df['B-height'][:] / dia_list_hv
 df = pandas.read_csv(excelpath_lv);  asp_ratio_lv = df['B-height'][:] / dia_list_lv
 df = pandas.read_csv(excelpath_mv);  asp_ratio_mv = df['B-height'][:] / dia_list_mv
 
-# # # repeatability via t-test #
-# request_c = np.array(circ_list_lv)  # 对照组
-# request_e = np.array(circ_list_hv)  # 实验组(真
-# t, pval = stats.ttest_ind(request_e, request_c, equal_var=False); print(t); print(pval)
-# # # repeatability via intra class correlation test #
-# ratings = circ_list_hv + circ_list_lv + circ_list_mv
-# raters = ['hv']*len(circ_list_hv) + ['lv']*len(circ_list_lv) + ['mv']*len(circ_list_mv)
-# targets = # 因为无法确定测量的值是不是同一个细胞，所以ICC不适用
-# data = pd.DataFrame({'targets':targets, 'raters':raters, 'ratings':ratings})
-# icc = pg.intraclass_corr(data=data, targets='targets',
-#                          raters='raters', ratings='ratings')
-# print(icc.set_index('Type'))
 
-# # - - - - - remove object with diameter < 10 um - - - -
-# ind = [i for i in range(len(dia_list_lv)) if dia_list_lv[i] < 5]
-# for index in sorted(ind, reverse=True): del dia_list_lv[index], asp_ratio_lv[index], meanInt_list_lv[index]
-
-# - - - - - 3D scatter plotting func chuck - - - - - - - - - -
-fig = plt.figure(11, figsize=(10, 10));  plt.clf()
-ax = fig.add_subplot(projection='3d')
-ax.set_xlabel('Diameter (um)');  ax.set_ylabel('Mean intensity (a.u.)'); ax.set_zlabel('Z-X aspect ratio (a.u.)')
-# ax.scatter(dia_list_hv*2, meanInt_list_hv, circ_list_hv, color='gray')
-ax.scatter(dia_list_lv*2, meanInt_list_lv, asp_ratio_lv, color='red', alpha=0.3, s=4)
-ax.scatter(dia_list_mv*2, meanInt_list_mv, asp_ratio_mv, color='green', alpha=0.3, s=4)
-
-ax.set_xlim3d(0, 50)  # Diameter
-ax.set_ylim3d(30, 80)  # Mean intensity
-ax.set_zlim3d(0, 4)  # Aspect ratio
-ax.view_init(elev=0, azim=56, roll=0)   # (elev=10, azim=59, roll=0)
+# - - - - - - - - - Box plot: mean intensity vs. time - - - - - - - - - - -
+if ('-0hr' in folderPath_lv) and ('-0hr' in folderPath_mv):
+    total_meanInt_0hr_lv = meanInt_list_lv; total_meanInt_0hr_mv = meanInt_list_mv
+if ('-1hr' in folderPath_lv) and ('-1hr' in folderPath_mv):
+    total_meanInt_1hr_lv = meanInt_list_lv; total_meanInt_1hr_mv = meanInt_list_mv
+if ('-2hr' in folderPath_lv) and ('-2hr' in folderPath_mv):
+    total_meanInt_2hr_lv = meanInt_list_lv; total_meanInt_2hr_mv = meanInt_list_mv
+if ('-3hr' in folderPath_lv) and ('-3hr' in folderPath_mv):
+    total_meanInt_3hr_lv = meanInt_list_lv; total_meanInt_3hr_mv = meanInt_list_mv
+# if ('-4hr' in folderPath_lv) and ('-4hr' in folderPath_mv):
+#     total_meanInt_4hr_lv = meanInt_list_lv; total_meanInt_4hr_mv = meanInt_list_mv
 
 
+# - - - - - Repeat above code to read through 0-hour to 3-hour, then execute following code for plotting
+plt.figure(12); plt.clf();
+data_lv = [total_meanInt_0hr_lv, total_meanInt_1hr_lv, total_meanInt_2hr_lv, total_meanInt_3hr_lv]#, total_meanInt_4hr_lv]
+data_mv = [total_meanInt_0hr_mv, total_meanInt_1hr_mv, total_meanInt_2hr_mv, total_meanInt_3hr_mv]#, total_meanInt_4hr_mv]
+labels = ['0-hour', '1-hour', '2-hour', '3-hour']
+offsets_lv = np.arange(len(data_lv)) - 0.17
+bp = plt.boxplot(data_lv, widths=0.3, positions=offsets_lv, patch_artist=True, sym='x')
+colors = ['pink','pink','pink','pink','pink']
+for patch, color in zip(bp['boxes'], colors): patch.set_facecolor(color)
+
+offsets_mv = np.arange(len(data_lv)) + 0.17
+bp1 = plt.boxplot(data_mv, widths=0.3, positions=offsets_mv, patch_artist=True, sym='x');
+colors = ['lightgreen','lightgreen','lightgreen','lightgreen']
+for patch, color in zip(bp1['boxes'], colors): patch.set_facecolor(color)
+
+plt.xticks([0, 1, 2, 3], labels)
+
+
+# # - - - - Welch T-test to find out significant difference of mean intensity - - - -
+# request_c = np.array(total_meanInt_2hr_lv)  # 对照组
+# request_e = np.array(total_meanInt_2hr_mv)  # 实验组(真
+# _, pval = stats.ttest_ind(request_e, request_c, equal_var=False);  print(pval)
