@@ -14,8 +14,8 @@ matplotlib.use("Qt5Agg")
 
 
 # folderPath_hv = r"F:\Data_2024\20240626_jurkat\hv-0hr\3D particle analysis"
-folderPath_lv = r"F:\Data_2024\20240626_jurkat\lv-4hr\3D particle analysis"
-folderPath_mv = r"F:\Data_2024\20240626_jurkat\mv-4hr\3D particle analysis"
+folderPath_lv = r"F:\Data_2024\20240626_jurkat\lv-0hr\3D particle analysis"
+folderPath_mv = r"F:\Data_2024\20240626_jurkat\mv-0hr\3D particle analysis"
 analyExcel = "Statistics for Data_3d_view" + ".csv"
 # excelpath_hv = folderPath_hv + "\\" + analyExcel
 excelpath_lv = folderPath_lv + "\\" + analyExcel
@@ -72,6 +72,6 @@ ax.scatter(dia_list_mv*2, meanInt_list_mv, asp_ratio_mv, color='green', alpha=0.
 ax.set_xlim3d(0, 50)  # Diameter
 ax.set_ylim3d(30, 80)  # Mean intensity
 ax.set_zlim3d(0, 4)  # Aspect ratio
-ax.view_init(elev=0, azim=56, roll=0)   # (elev=10, azim=59, roll=0)
+ax.view_init(elev=31, azim=23, roll=0)   # (elev=10, azim=59, roll=0)
 
 

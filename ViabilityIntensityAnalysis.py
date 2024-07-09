@@ -57,15 +57,15 @@ if ('-2hr' in folderPath_lv) and ('-2hr' in folderPath_mv):
     total_meanInt_2hr_lv = meanInt_list_lv; total_meanInt_2hr_mv = meanInt_list_mv
 if ('-3hr' in folderPath_lv) and ('-3hr' in folderPath_mv):
     total_meanInt_3hr_lv = meanInt_list_lv; total_meanInt_3hr_mv = meanInt_list_mv
-# if ('-4hr' in folderPath_lv) and ('-4hr' in folderPath_mv):
-#     total_meanInt_4hr_lv = meanInt_list_lv; total_meanInt_4hr_mv = meanInt_list_mv
+if ('-4hr' in folderPath_lv) and ('-4hr' in folderPath_mv):
+    total_meanInt_4hr_lv = meanInt_list_lv; total_meanInt_4hr_mv = meanInt_list_mv
 
 
 # - - - - - Repeat above code to read through 0-hour to 3-hour, then execute following code for plotting
 plt.figure(12); plt.clf();
-data_lv = [total_meanInt_0hr_lv, total_meanInt_1hr_lv, total_meanInt_2hr_lv, total_meanInt_3hr_lv]#, total_meanInt_4hr_lv]
-data_mv = [total_meanInt_0hr_mv, total_meanInt_1hr_mv, total_meanInt_2hr_mv, total_meanInt_3hr_mv]#, total_meanInt_4hr_mv]
-labels = ['0-hour', '1-hour', '2-hour', '3-hour']
+data_lv = [total_meanInt_0hr_lv, total_meanInt_1hr_lv, total_meanInt_2hr_lv, total_meanInt_3hr_lv, total_meanInt_4hr_lv]
+data_mv = [total_meanInt_0hr_mv, total_meanInt_1hr_mv, total_meanInt_2hr_mv, total_meanInt_3hr_mv, total_meanInt_4hr_mv]
+labels = ['0-hour', '1-hour', '2-hour', '3-hour', '4-hour']
 offsets_lv = np.arange(len(data_lv)) - 0.17
 bp = plt.boxplot(data_lv, widths=0.3, positions=offsets_lv, patch_artist=True, sym='x')
 colors = ['pink','pink','pink','pink','pink']
@@ -73,13 +73,13 @@ for patch, color in zip(bp['boxes'], colors): patch.set_facecolor(color)
 
 offsets_mv = np.arange(len(data_lv)) + 0.17
 bp1 = plt.boxplot(data_mv, widths=0.3, positions=offsets_mv, patch_artist=True, sym='x');
-colors = ['lightgreen','lightgreen','lightgreen','lightgreen']
+colors = ['lightgreen','lightgreen','lightgreen','lightgreen','lightgreen']
 for patch, color in zip(bp1['boxes'], colors): patch.set_facecolor(color)
 
-plt.xticks([0, 1, 2, 3], labels)
+plt.xticks([0, 1, 2, 3, 4], labels)
 
 
-# # - - - - Welch T-test to find out significant difference of mean intensity - - - -
-# request_c = np.array(total_meanInt_2hr_lv)  # 对照组
-# request_e = np.array(total_meanInt_2hr_mv)  # 实验组(真
-# _, pval = stats.ttest_ind(request_e, request_c, equal_var=False);  print(pval)
+# - - - - Welch T-test to find out significant difference of mean intensity - - - -
+request_c = np.array(total_meanInt_4hr_lv)  # 对照组
+request_e = np.array(total_meanInt_4hr_mv)  # 实验组(真
+_, pval = stats.ttest_ind(request_e, request_c, equal_var=False);  print(pval)

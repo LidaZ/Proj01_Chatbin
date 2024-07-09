@@ -11,14 +11,14 @@ matplotlib.use("Qt5Agg")
 
 sys_ivs800 = True  # Set as True if taken by IVS-800
 gpu_proc = False
-root = r"E:\Data_2024\20240626_jurkat\mv-11.5hr"  # Folder path which containing the raw Data
-DataId = "Storage_20240627_11h37m05s.dat"
+root = r"F:\Data_2024\20240626_jurkat\lv-1hr"  # Folder path which containing the raw Data
+DataId = "Storage_20240626_13h14m11s.dat"
 
 save_view = False  # Set as True if save dB-OCT img as 3D stack file for view
 save_video = False  # (Only for dtype='timelapse') set as True if save Int_view img as .mp4
-display_proc = True  # Set as True if monitor img during converting
+display_proc = False  # Set as True if monitor img during converting
 
-save_tif = False  # Set as True if save intensity img as 3D stack .tiff file in the current folder
+save_tif = True  # Set as True if save intensity img as 3D stack .tiff file in the current folder
 if gpu_proc:
     import cupy as np; from cupyx.scipy.ndimage import zoom
 octRangedB = [-10, 70]  # set dynamic range of log OCT signal display
@@ -36,7 +36,7 @@ else:
 if dataType is not None:
     if dataType == 'timelapse':  # # # # # # # # # #
         with open(DataFold, mode='rb') as file:  # Read info from header
-            header = np.fromfile(file, dtype='>d', count=7 * 2, offset=0)  # read para from header (128*2 bytes)
+            header = np.fromfile(file, dtype='>d', count=7*2, offset=0)  # read para from header (128*2 bytes)
         [FrameRate, FileSize, XpixSize, ZpixSize, XScanRange, ZScanRange, RI] = header[0:7].tolist()
         [dim_y, dim_x, dim_z] = [int(x) for x in header[1:4].tolist()]  # initialize dim_y, x, z
     elif dataType == '3d':  # # # # # # # # # #
@@ -48,7 +48,7 @@ if dataType is not None:
         with open(DataFold, mode='rb') as file:
             rawDat = np.fromfile(file, dtype='>f')  # Read data handler. ">": big-endian; "f", float32, 4 bytes
             vol = rawDat.reshape(dim_y, dim_x, dim_z)  # Reshape data as 3D volume
-    [pix_x, pix_z] = XScanRange / dim_x * 1000, ZScanRange / dim_z * 1000  # pixel size in um
+    [pix_x, pix_z] = XScanRange/dim_x*1000, ZScanRange/dim_z*1000  # pixel size in um
     aspect_ratio = pix_x/pix_z
     res_dim_x = int(dim_x*aspect_ratio+0.5)
 
@@ -104,7 +104,8 @@ if save_view:
     octImgView = (np.clip((res_octImgVol - octRangedB[0]) / (octRangedB[1] - octRangedB[0]),0, 1) * 255).astype(dtype='uint8')
     tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + dataType + '_view.tif', np.rollaxis(octImgView[:, :, :], 0,1))
 if save_tif:
-    tifffile.imwrite(root + '\\' + DataId[:-4] + '_IntImg.tif', np.rollaxis(res_octImgVol[:, :, :], 0,1))
+    res_octImgVol = np.power(10, octImgVol/10)  # convert to linear intensity (square of signal amplitude)
+    tifffile.imwrite(root + '\\' + DataId[:-4] + '_IntImg.tif', np.rollaxis(res_octImgVol[:, :, :], 0,1).astype(dtype='float32'))#, compression='zlib', compressionargs={'level': 8})
 if save_video and dataType == 'timelapse':
     out.release();     cv2.destroyAllWindows()
 
