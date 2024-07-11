@@ -49,7 +49,7 @@ if sys_ivs800: pix_sep = 2  # 2um/pix for IVS-800
 plt.close(11); plt.figure(11, figsize=(13, 4));  plt.clf()
 
 
-folderPath = r"F:\Data_2024\20240626_jurkat\mv-0hr\3D particle analysis"
+folderPath = r"F:\Data_2024\20240626_jurkat\lv-3hr\3D particle analysis"
 analyExcel = "Statistics for Data_3d_view" + ".csv"
 stackImg = "Data_3d_view" + ".tif"
 excelpath = folderPath + "\\" + analyExcel;  stackpath = folderPath + "\\" + stackImg
@@ -82,7 +82,7 @@ plt.axis([0.1, 0.45, 0, 30]); plt.pause(0.01)
 ax = plt.subplot(1,3,2)#.cla()
 diameter = dia_list * pix_sep
 plt.hist(diameter, facecolor=ptcolor, bins=50, range=[1, 40], alpha=0.35, density=True); plt.title('Mean size per cell');
-plt.xlabel('Diameter (um)'); ax.set_xscale('log') #plt.axis([0, 40, 0, 0.35])
+plt.xlabel('Diameter (um)');  # ax.set_xscale('log') #plt.axis([0, 40, 0, 0.35])
 plt.pause(0.01)
 # # # circularity histogram
 plt.subplot(1,3,3)#.cla()
@@ -91,6 +91,8 @@ plt.xlabel('Regularity (A.u.)'); plt.axis([0, 5, 0, 1.75])
 
 # plt.text(1, 2.2, 'Cell count number is ' + f"{total_cnt/spas:.2E}" + "/mL")
 print('Cell count number is ' + f"{total_cnt/spas:.2E}" + "/mL")
+index = np.argwhere(diameter<7); mod_diameter = np.delete(diameter, index)
+print('Mean diameter is: ' + str(np.mean(mod_diameter)) + ' um')
 plt.pause(0.01)
 
 # # # # # # # # # # # # # #

@@ -27,7 +27,7 @@ band1 = 0.75 ;  band2 = 1.1 ; band3 = 2.2  # Hz, check figure(12)
 band_discr = (np.divide([band1, band2, band3], fs) * dim_y).astype('int')
 
 for depthIndex in range(dim_z):   # dim_z
-    # depthIndex = 700
+    # depthIndex = 512
     enfaceData = rawDataRotat[:, depthIndex, :];   # plt.figure(10); plt.clf(); plt.imshow(np.abs(enfaceData))
     enfaceFreqSpec = fft.fft(enfaceData[:, :]*np.tile(np.hanning(dim_y), (dim_x, 1)))  # apply Hann window before fft to mitigate frequency leakage
     ampEnfaceFreqSpec = np.abs(enfaceFreqSpec[:, 1:round(dim_y/2)])  # mapping freq range (1:20) # 1:round(np.shape(enfaceFreqSpec)[1]/2)
@@ -35,11 +35,11 @@ for depthIndex in range(dim_z):   # dim_z
     # # # # - - - - - - - - - Plot frequency spectrum to determine the frequency bands - - - - - # # #
     # freqs = np.arange(dim_y)/dim_y*fs;  freq_half = freqs[0:round(int(dim_y/2))]  # np.fft.fftfreq(dim_y)
     # plt.figure(11);    plt.clf();    plt.imshow(ampEnfaceFreqSpec)
-    # plt.figure(12); freqProfile = np.abs(enfaceFreqSpec[194, 0:round(int(dim_y/2))]); plt.plot(freq_half, freqProfile/freqProfile[0])
+    # plt.figure(12); freqProfile = np.abs(enfaceFreqSpec[126, 0:round(int(dim_y/2))]); plt.plot(freq_half, freqProfile/freqProfile[0])
     # plt.xlabel('Frequency (Hz)'); plt.ylabel('Normalized power (a.u.)')
 
     r = np.sum(ampEnfaceFreqSpec[:, 1:band_discr[0]], axis=1);             r_ch = r / 40  # [1:7] [7:17] [17:28] [28:]
-    g = np.sum(ampEnfaceFreqSpec[:, band_discr[0]:band_discr[1]], axis=1); g_ch = g / 20
+    g = np.sum(ampEnfaceFreqSpec[:, band_discr[0]:band_discr[1]], axis=1); g_ch = g / 20  # 0~0.75hz:10; 0.75~5hz:30; 5~25hz:40
     b = np.sum(ampEnfaceFreqSpec[:, band_discr[1]:band_discr[2]], axis=1); b_ch = b / 10
     freqEncodeProj[:, depthIndex, 0] = r_ch*256
     freqEncodeProj[:, depthIndex, 1] = g_ch*256
