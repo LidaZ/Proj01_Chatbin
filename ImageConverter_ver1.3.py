@@ -11,8 +11,8 @@ matplotlib.use("Qt5Agg")
 
 sys_ivs800 = True  # Set as True if taken by IVS-800
 gpu_proc = True
-root = r"F:\Data_2024\20240711_StabilityStudy\20240711_StabilityTest_ParticleInRoom2Floor"  # Folder path which containing the raw Data
-DataId = "Storage_20240711_17h39m07s.dat"
+root = r"F:\Data_2024\20240711_StabilityStudy\20240711_StabilityTest_YeastInRoom2Floor"  # Folder path which containing the raw Data
+DataId = "Data.bin"
 
 save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
 save_video = False  # (Only for dtype='timelapse') set as True if save Int_view img as .mp4
@@ -20,7 +20,7 @@ display_proc = False  # Set as True if monitor img during converting
 
 save_tif = True  # Set as True if save intensity img as 3D stack .tiff file in the current folder
 if gpu_proc:
-    import cupy as np; from cupyx.scipy.ndimage import zoom
+    import cupy as np; from cupyx.scipy.ndimage import zoom # import nvTIFF
 octRangedB = [-10, 70]  # set dynamic range of log OCT signal display
 if sys_ivs800:  octRangedB = [-25, 20]
 DataFold = root + '\\' + DataId  # Raw data file name, usually it is Data.bin
@@ -32,7 +32,7 @@ if DataId[-4:] == '.dat':
 elif DataId[-4:] == '.bin':
     dataType = '3d'
 else:
-    print('Unrecognizable data type')
+    raise ValueError('Unrecognizable data type')
 if dataType is not None:
     if dataType == 'timelapse':  # # # # # # # # # #
         with open(DataFold, mode='rb') as file:  # Read info from header
@@ -104,7 +104,8 @@ if save_view:
     octImgView = (np.clip((res_octImgVol - octRangedB[0]) / (octRangedB[1] - octRangedB[0]),0, 1) * 255).astype(dtype='uint8')
     tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + dataType + '_view.tif', np.rollaxis(octImgView[:, :, :], 0,1).get())
 if save_tif:
-    res_octImgVol = np.power(10, octImgVol/10)  # convert to linear intensity (square of signal amplitude) 
+    res_octImgVol = np.power(10, octImgVol/10)  # convert to linear intensity (square of signal amplitude)
+    # if gpu_proc:
     tifffile.imwrite(root + '\\' + DataId[:-4] + '_IntImg.tif', np.rollaxis(res_octImgVol[:, :, :], 0,1).get().astype(dtype='float32'))#, compression='zlib', compressionargs={'level': 8})
 if save_video and dataType == 'timelapse':
     out.release();     cv2.destroyAllWindows()
