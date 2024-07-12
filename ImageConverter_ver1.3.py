@@ -10,15 +10,15 @@ matplotlib.use("Qt5Agg")
 
 
 sys_ivs800 = True  # Set as True if taken by IVS-800
-gpu_proc = False
-root = r"F:\Data_2024\20240710_particle_invert_settle30s"  # Folder path which containing the raw Data
-DataId = "Data.bin"
+gpu_proc = True
+root = r"F:\Data_2024\20240711_StabilityStudy\20240711_StabilityTest_ParticleInRoom2Floor"  # Folder path which containing the raw Data
+DataId = "Storage_20240711_17h39m07s.dat"
 
 save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
 save_video = False  # (Only for dtype='timelapse') set as True if save Int_view img as .mp4
 display_proc = False  # Set as True if monitor img during converting
 
-save_tif = False  # Set as True if save intensity img as 3D stack .tiff file in the current folder
+save_tif = True  # Set as True if save intensity img as 3D stack .tiff file in the current folder
 if gpu_proc:
     import cupy as np; from cupyx.scipy.ndimage import zoom
 octRangedB = [-10, 70]  # set dynamic range of log OCT signal display
@@ -102,10 +102,10 @@ if save_view:
     if dataType == '3d': res_octImgVol = zoom(octImgVol, [aspect_ratio, 1, 1], order=1)
     elif dataType == 'timelapse': res_octImgVol = octImgVol
     octImgView = (np.clip((res_octImgVol - octRangedB[0]) / (octRangedB[1] - octRangedB[0]),0, 1) * 255).astype(dtype='uint8')
-    tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + dataType + '_view.tif', np.rollaxis(octImgView[:, :, :], 0,1))
+    tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + dataType + '_view.tif', np.rollaxis(octImgView[:, :, :], 0,1).get())
 if save_tif:
     res_octImgVol = np.power(10, octImgVol/10)  # convert to linear intensity (square of signal amplitude) 
-    tifffile.imwrite(root + '\\' + DataId[:-4] + '_IntImg.tif', np.rollaxis(res_octImgVol[:, :, :], 0,1).astype(dtype='float32'))#, compression='zlib', compressionargs={'level': 8})
+    tifffile.imwrite(root + '\\' + DataId[:-4] + '_IntImg.tif', np.rollaxis(res_octImgVol[:, :, :], 0,1).get().astype(dtype='float32'))#, compression='zlib', compressionargs={'level': 8})
 if save_video and dataType == 'timelapse':
     out.release();     cv2.destroyAllWindows()
 
