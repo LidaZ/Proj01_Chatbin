@@ -13,15 +13,19 @@ from lowpass_filter import butter_lowpass_filter
 from MapVarToRGB import num_to_rgb
 from matplotlib.colors import hsv_to_rgb
 import tifffile
-import colorsys
-from PIL import Image
+import os
+from tkinter import *
+from tkinter import filedialog
 import matplotlib
 matplotlib.use("Qt5Agg")
 
 
-folderPath = r"F:\Data_2024\20240626_jurkat\lv-1hr"
-stackname = "Storage_20240626_13h15m17s_IntImg"  # Storage_20240626_13h24m16s_IntImg / Storage_20240626_13h15m17s_IntImg
-stackFilePath = folderPath + "\\" + stackname + ".tif"
+# folderPath = r"F:\Data_2024\20240626_jurkat\lv-1hr"
+# stackname = "Storage_20240626_13h15m17s_IntImg"  # Storage_20240626_13h24m16s_IntImg / Storage_20240626_13h15m17s_IntImg
+# stackFilePath = folderPath + "\\" + stackname + ".tif"
+tk = Tk(); tk.withdraw(); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*")])
+DataId = os.path.basename(stackFilePath);  # root = os.path.dirname(DataFold)
+
 fs = 50  # Hz, B-scan frequency during acquisition
 cutoff = 2;  order = 2  # (cutoff frequency, filtering order), lowpass filter to remove DC component before computing variance
 colormap = cm.rainbow
@@ -36,7 +40,7 @@ satRange = [0, 0.3]  # intensity: 0~1
 
 for depthIndex in range(dim_z):   # dim_z
     # depthIndex = 447  # # #
-    enfaceData = rawDataRotat[:, depthIndex, 150:250]  # # (dim_x, dim_y)
+    enfaceData = rawDataRotat[:, depthIndex, :]  # # (dim_x, dim_y)
     enfaceData_lpfilt = butter_lowpass_filter(enfaceData, cutoff, fs, order)
     enfaceData_lp = enfaceData - enfaceData_lpfilt
     # plt.figure(11);    plt.clf();    plt.plot(enfaceData[355, :]);   plt.plot(enfaceData_lp[355, :])
@@ -56,6 +60,6 @@ for depthIndex in range(dim_z):   # dim_z
 
 img = varProj
 figsize_mag = 7
-plt.figure(17, figsize=(figsize_mag, dim_z/dim_x*figsize_mag));  plt.clf();  plt.imshow(img, vmin=0, vmax=1)
+plt.figure(16, figsize=(figsize_mag, dim_z/dim_x*figsize_mag));  plt.clf();  plt.imshow(img, vmin=0, vmax=1)
 plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
 gc.collect()

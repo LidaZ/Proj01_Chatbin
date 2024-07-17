@@ -27,8 +27,8 @@ if sys_ivs800:  octRangedB = [-25, 20]
 # root = r"F:\Data_2024\20240626_jurkat\lv-0hr"  # Folder path which containing the raw Data
 # DataId = "Storage_20240626_12h35m58s.dat"
 # DataFold = root + '\\' + DataId  # Raw data file name, usually it is Data.bin
-root = Tk(); root.withdraw(); DataFold = filedialog.askopenfilename(filetypes=[("", "*")])  # use TkInterface to catch dir path of data file
-DataId = os.path.basename(DataFold);  # root = os.path.dirname(DataFold)
+tk = Tk(); tk.withdraw(); DataFold = filedialog.askopenfilename(filetypes=[("", "*")])  # use TkInterface to catch dir path of data file
+DataId = os.path.basename(DataFold);   root = os.path.dirname(DataFold)
 
 
 dataType = None
