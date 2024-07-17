@@ -15,15 +15,15 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 
 
-folderPath = r"F:\Data_2024\20240711_StabilityStudy\20240711_StabilityTest_YeastInRoom2Floor"
-stackname = "Storage_20240711_17h46m53s_IntImg"
+folderPath = r"F:\Data_2024\20240626_jurkat\hv-0hr"
+stackname = "Storage_20240626_12h06m20s_IntImg"
 stackFilePath = folderPath + "\\" + stackname + ".tif"
 rawData = tifffile.imread(stackFilePath)   # load linear intensity data from stack. Dimension (Y, Z, X)
 dim_y, dim_z, dim_x = np.shape(rawData)
 rawDataRotat = np.swapaxes(rawData, 0, 2)  # rotate en-face plane for 90 degree, so that fast scan (X) is horizontal axis to easy 2D FFT. Dimension (X, Z, Y)
 freqEncodeProj = np.zeros((dim_x, dim_z, 3), 'uint8')
 fs = 50  # Hz, B-scan frequency during acquisition
-band1 = 0.4 ;  band2 = 1.3 ; band3 = 5  # Hz, check figure(12); (0.75, 1.1, 2.2)
+band1 = 0.4 ;  band2 = 1.1 ; band3 = 3  # Hz, check figure(12); (0.75, 1.1, 2.2)
 band_discr = (np.divide([band1, band2, band3], fs) * dim_y).astype('int')
 
 for depthIndex in range(dim_z):   # dim_z
@@ -43,9 +43,9 @@ for depthIndex in range(dim_z):   # dim_z
     r = np.sum(ampEnfaceFreqSpec[:, 0:band_discr[0]], axis=1)
     g = np.sum(ampEnfaceFreqSpec[:, band_discr[0]:band_discr[1]], axis=1)
     b = np.sum(ampEnfaceFreqSpec[:, band_discr[1]:band_discr[2]], axis=1)
-    r_ch = (r+0) / 500  # [1:7] [7:17] [17:28] [28:]
-    g_ch = (g+0) / 500  # 0~0.75hz:10; 0.75~5hz:30; 5~25hz:40
-    b_ch = (b+0) / 1000
+    r_ch = (r+0) / 30  # [1:7] [7:17] [17:28] [28:]
+    g_ch = (g+0) / 50  # 0~0.75hz:10; 0.75~5hz:30; 5~25hz:40
+    b_ch = (b+0) / 50
     freqEncodeProj[:, depthIndex, 0] = r_ch*256;  freqEncodeProj[:, depthIndex, 1] = g_ch*256;  freqEncodeProj[:, depthIndex, 2] = b_ch*256
 
     print(str(depthIndex) + '/' + str(dim_z))
