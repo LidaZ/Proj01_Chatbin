@@ -20,10 +20,10 @@ def return_datatype(dataid):
     return dtype
 
 
-sys_ivs800 = False
+sys_ivs800 = True
 
 save_view = False  # Set as True if save dB-OCT img as 3D stack file for view
-save_tif = False  # Set as True if save intensity img as 3D stack .tiff file in the current folder
+save_tif = True  # Set as True if save intensity img as 3D stack .tiff file in the current folder
 
 save_video = False  # (Only for dtype='timelapse') set as True if save Int_view img as .mp4
 display_proc = False  # Set as True if monitor img during converting
