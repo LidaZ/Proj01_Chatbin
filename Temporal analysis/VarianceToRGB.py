@@ -50,7 +50,7 @@ for depthIndex in range(dim_z):   # dim_z
     varProj_var = np.var(enfaceData_lp, axis=1)  # np.var()  /  np.std()
     varProj_var_norm = np.divide(varProj_var, varProj_sat)  # normalized intensity to be robust to noise
     varProj_hue = np.multiply(np.clip((varProj_var_norm - hueRange[0]) / (hueRange[1] - hueRange[0]), 0, 1), 0.6)  # limit color display range from red to blue
-    varProj_rgb = hsv_to_rgb(np.transpose([varProj_hue, varProj_sat, varProj_val]))
+    varProj_rgb = hsv_to_rgb(np.transpose([varProj_hue, varProj_sat, varProj_sat]))  # [varProj_hue, varProj_sat, varProj_val]
     varProj[depthIndex, :, :] = varProj_rgb * 255
 
     # varProj_rgb = num_to_rgb(np.var(enfaceData_lp, axis=1), max_val=20)

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import gc
 import pingouin as pg
 import pandas as pd
+from scipy.stats import pearsonr
 # from scipy.stats import norm
 # from scipy.optimize import curve_fit
 # from tifffile import imsave
@@ -15,8 +16,8 @@ matplotlib.use("Qt5Agg")
 
 
 # folderPath_hv = r"F:\Data_2024\20240626_jurkat\hv-0hr\3D particle analysis"
-folderPath_lv = r"F:\Data_2024\20240626_jurkat\lv-4hr\3D particle analysis"
-folderPath_mv = r"F:\Data_2024\20240626_jurkat\mv-4hr\3D particle analysis"
+folderPath_lv = r"F:\Data_2024\20240626_jurkat\lv-0hr\3D particle analysis"
+folderPath_mv = r"F:\Data_2024\20240626_jurkat\mv-0hr\3D particle analysis"
 analyExcel = "Statistics for Data_3d_view" + ".csv"
 # excelpath_hv = folderPath_hv + "\\" + analyExcel
 excelpath_lv = folderPath_lv + "\\" + analyExcel
@@ -83,3 +84,21 @@ plt.xticks([0, 1, 2, 3, 4], labels)
 request_c = np.array(total_meanInt_4hr_lv)  # 对照组
 request_e = np.array(total_meanInt_4hr_mv)  # 实验组(真
 _, pval = stats.ttest_ind(request_e, request_c, equal_var=False);  print(pval)
+
+
+# - - - - Pearson test to find out correlation between viability, mean intensity, diameter, and aspect ratio - - - -
+viability_oxy = [82.00, 59.10, 49.70, 45.20, 49.70]; viability_cont = [86.90, 83.60, 85.90, 84.90, 85.90]
+viability = viability_oxy + viability_cont  # oxydol-treated and control
+meanInt_oxy = [49.00,50.13,52.54,50.54,49.85]; meanInt_cont = [50.68,48.75,47.33,47.32,48.01]
+meanInt = meanInt_oxy + meanInt_cont
+diameter_oxy = [11.724,12.35,12.88,12.31, 10.237]; diameter_cont = [11.49,11.3465,9.8095,9.6875, 9.2509]
+diameter_y = diameter_oxy + diameter_cont; diameter = [i * 2 for i in diameter_y]
+AspectRatio_oxy = [1.438, 1.564, 1.423, 1.470, 1.733]; AspectRatio_cont = [1.499, 1.252, 1.400, 1.401, 1.377]
+AspectRatio = AspectRatio_oxy + AspectRatio_cont
+
+plt.figure(21); plt.clf();
+plt.scatter(meanInt_oxy, viability_oxy, color='xkcd:pink')
+plt.scatter(meanInt_cont, viability_cont, color='xkcd:green')
+
+corr, _ = pearsonr(viability, AspectRatio);  print(corr)
+
