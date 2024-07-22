@@ -16,8 +16,8 @@ matplotlib.use("Qt5Agg")
 
 
 # folderPath_hv = r"F:\Data_2024\20240626_jurkat\hv-0hr\3D particle analysis"
-folderPath_lv = r"F:\Data_2024\20240626_jurkat\lv-0hr\3D particle analysis"
-folderPath_mv = r"F:\Data_2024\20240626_jurkat\mv-0hr\3D particle analysis"
+folderPath_lv = r"F:\Data_2024\20240626_jurkat\lv-3hr\3D particle analysis"
+folderPath_mv = r"F:\Data_2024\20240626_jurkat\mv-3hr\3D particle analysis"
 analyExcel = "Statistics for Data_3d_view" + ".csv"
 # excelpath_hv = folderPath_hv + "\\" + analyExcel
 excelpath_lv = folderPath_lv + "\\" + analyExcel
@@ -85,6 +85,13 @@ request_c = np.array(total_meanInt_4hr_lv)  # 对照组
 request_e = np.array(total_meanInt_4hr_mv)  # 实验组(真
 _, pval = stats.ttest_ind(request_e, request_c, equal_var=False);  print(pval)
 
+
+# # # # - - - - - find mode of diameter histogram, which match the NC-200 best - - - - # # #
+# his_data = dia_list_lv
+# plt.figure(31); plt.clf(); plt.hist(his_data, facecolor='red', bins=30, range=[1, 40], alpha=0.35, density=True)
+# # counts, bin_edges = np.histogram(his_data[~np.isnan(his_data)], bins=20)
+# # peak_index = counts.argmax(axis=0); mode_diameter = bin_edges[peak_index-1]  # (bin_edges[peak_index-1] + bin_edges[peak_index]) / 2
+# # print('mode of diameter is: ', str(mode_diameter))
 
 # - - - - Pearson test to find out correlation between viability, mean intensity, diameter, and aspect ratio - - - -
 viability_oxy = [82.00, 59.10, 49.70, 45.20, 49.70]; viability_cont = [86.90, 83.60, 85.90, 84.90, 85.90]
