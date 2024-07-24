@@ -27,7 +27,7 @@ tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filed
 DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath);  tk.destroy()
 print('Load data folder: ' + root)
 fs = 50  # Hz, B-scan frequency during acquisition
-cutoff = 0.5;  order = 2  # (cutoff frequency, filtering order), lowpass filter to remove DC component before computing variance
+cutoff = 0.5;  order = 2  # (cutoff frequency = 0.5, filtering order = 2), lowpass filter to remove DC component before computing variance
 colormap = cm.rainbow
 norm = matplotlib.colors.Normalize(vmin=0, vmax=2, clip=True)
 rawData = tifffile.imread(stackFilePath)   # load linear intensity data from stack. Dimension (Y, Z, X)
@@ -35,7 +35,7 @@ dim_y, dim_z, dim_x = np.shape(rawData)
 rawDataRotat = np.swapaxes(rawData, 0, 2)  # rotate en-face plane for 90 degree, so that fast scan (X) is horizontal axis to easy 2D FFT. Dimension (X, Z, Y)
 varProj = np.zeros((dim_z, dim_x, 3), 'uint8')
 varProj_sat = np.ones((dim_x), 'float32')
-hueRange = [0, 0.1]  # variance: 0~0.05 / std: 0~
+hueRange = [0, 0.05]  # variance: 0~0.1 / std: 0~
 satRange = [0, 0.3]  # intensity: 0~1
 
 for depthIndex in tqdm(range(dim_z)): # dim_z
@@ -48,7 +48,7 @@ for depthIndex in tqdm(range(dim_z)): # dim_z
     varProj_proj = np.max(enfaceData, axis=1)  # max projection along Y (time)
     varProj_val = np.clip((varProj_proj - satRange[0]) / (satRange[1] - satRange[0]), 0, 1)
     varProj_var = np.var(enfaceData_lp, axis=1)  # np.var()  /  np.std()
-    varProj_var_norm = np.divide(varProj_var, varProj_val)  # normalized intensity to be robust to noise
+    varProj_var_norm = np.divide(varProj_var, np.square(varProj_proj))  # variance normalized by max intensity *SQUARE*, should be robust to noise
     varProj_hue = np.multiply(np.clip((varProj_var_norm - hueRange[0]) / (hueRange[1] - hueRange[0]), 0, 1), 0.6)  # limit color display range from red to blue
     varProj_rgb = hsv_to_rgb(np.transpose([varProj_hue, varProj_val, varProj_val]))  # [varProj_hue, varProj_sat, varProj_val]
     varProj[depthIndex, :, :] = varProj_rgb * 255
