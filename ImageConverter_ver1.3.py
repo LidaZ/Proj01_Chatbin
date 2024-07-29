@@ -21,8 +21,9 @@ def return_datatype(dataid):
 
 
 sys_ivs800 = True
+rasterRepeat = 1
 
-save_view = False  # Set as True if save dB-OCT img as 3D stack file for view
+save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
 save_tif = True  # Set as True if save intensity img as 3D stack .tiff file in the current folder
 
 save_video = False  # (Only for dtype='timelapse') set as True if save Int_view img as .mp4
@@ -53,7 +54,7 @@ tk = Tk(); tk.withdraw(); DataFold = filedialog.askopenfilename(filetypes=[("", 
 DataId = os.path.basename(DataFold);   root = os.path.dirname(DataFold); tk.destroy()
 
 dataType = return_datatype(DataId)
-[dim_y, dim_z, dim_x, FrameRate] = [0, 0, 0, 30];  aspect_ratio = 1
+[dim_y, dim_z, dim_x, FrameRate] = [0, 0, 0, 30];  # aspect_ratio = 1
 if dataType is not None:
     if dataType == 'timelapse':  # # # # # # # # # #
         with open(DataFold, mode='rb') as file:  # Read info from header
@@ -65,21 +66,23 @@ if dataType is not None:
         conf.read(root + '\\' + "DataInfo.ini")
         [dim_x, dim_y, dim_z] = [int(conf['Dimensions']['X']), int(conf['Dimensions']['Y']),
                                  int(conf['Dimensions']['Z'])]  # Dimensions imported from DataInfo.ini
+        if rasterRepeat > 1: dim_y_raster = int(dim_y / rasterRepeat)
         [XScanRange, ZScanRange] = [float(conf['VoxelSize']['X'])/1000, float(conf['VoxelSize']['Z'])/1000]
         with open(DataFold, mode='rb') as file:
             rawDat = np.fromfile(file, dtype='>f')  # Read data handler. ">": big-endian; "f", float32, 4 bytes
             vol = rawDat.reshape(dim_y, dim_x, dim_z)  # Reshape data as 3D volume
     [pix_x, pix_z] = XScanRange/dim_x*1000, ZScanRange/dim_z*1000  # pixel size in um
-    aspect_ratio = pix_x/pix_z
-    res_dim_x = int(dim_x*aspect_ratio+0.5)
+    # aspect_ratio = pix_x/pix_z
+    # res_dim_x = int(dim_x*aspect_ratio+0.5)
 
 if save_view or save_tif:
-    octImgVol = np.zeros([dim_y, dim_z, res_dim_x]).astype(dtype='f4')  # (dim_y, dim_x, dim_z)
+    if rasterRepeat > 1:  octImgVol_raster = np.zeros([int(dim_y/rasterRepeat), dim_z, dim_x]).astype(dtype='f4')
+    octImgVol = np.zeros([dim_y, dim_z, dim_x]).astype(dtype='f4')  # (dim_y, dim_x, dim_z)
 if save_video and dataType == 'timelapse':
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-    out = cv2.VideoWriter(root + '\\' + DataId[:-4] + '_' + dataType + '_video.avi', fourcc, round(FrameRate), (res_dim_x, dim_z))
+    out = cv2.VideoWriter(root + '\\' + DataId[:-4] + '_' + dataType + '_video.avi', fourcc, round(FrameRate), (dim_x, dim_z))
 if display_proc:
-    plt.figure(1, figsize=(dim_x/dim_z*aspect_ratio*7, 7))
+    plt.figure(1, figsize=(dim_x/dim_z*7, 7))  # (dim_x/dim_z*aspect_ratio*7, 7)
     plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
 
 # dim_y = 1
@@ -100,9 +103,10 @@ for index in tqdm(range(dim_y)):
     elif dataType == '3d':
         octImg = vol[index, :, :].T
 
-    res_octImg = zoom(octImg, [1, aspect_ratio], order=1)
+    res_octImg = octImg  # zoom(octImg, [1, aspect_ratio], order=1)
     if save_view or save_tif:
-        octImgVol[index, :, :] = res_octImg
+        if rasterRepeat > 1 and index%rasterRepeat == 0: octImgVol_raster[int(index/rasterRepeat), :, :] = res_octImg
+    octImgVol[index, :, :] = res_octImg
     if save_video and dataType == 'timelapse':
         octImgVideo = (np.clip((res_octImg - octRangedB[0]) / (octRangedB[1] - octRangedB[0]), 0, 1)
                        * 255).astype(dtype='uint8')
@@ -123,8 +127,8 @@ for index in tqdm(range(dim_y)):
         # plt.figure(2); plt.clf();  plt.plot(octImg[10, :])
 
 if save_view:
-    if dataType == '3d': res_octImgVol = zoom(octImgVol, [aspect_ratio, 1, 1], order=1)
-    elif dataType == 'timelapse': res_octImgVol = octImgVol
+    if rasterRepeat > 1: res_octImgVol = octImgVol_raster
+    else: res_octImgVol = octImgVol # zoom(octImgVol, [aspect_ratio, 1, 1], order=1)
     octImgView = (np.clip((res_octImgVol - octRangedB[0]) / (octRangedB[1] - octRangedB[0]),0, 1) * 255).astype(dtype='uint8')
     if gpu_proc: tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + dataType + '_view.tif', np.rollaxis(octImgView[:, :, :], 0,1).get())
     else: tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + dataType + '_view.tif', np.rollaxis(octImgView[:, :, :], 0,1))

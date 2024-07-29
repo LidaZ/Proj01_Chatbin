@@ -27,7 +27,7 @@ tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filed
 DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath);  tk.destroy()
 print('Load data folder: ' + root)
 fs = 50  # Hz, B-scan frequency during acquisition
-cutoff = 0.5;  order = 2  # (cutoff frequency = 0.5, filtering order = 2), lowpass filter to remove DC component before computing variance
+cutoff = 0.5;  order = 1  # (cutoff frequency = 0.5, filtering order = 2), lowpass filter to remove DC component before computing variance
 colormap = cm.rainbow
 norm = matplotlib.colors.Normalize(vmin=0, vmax=2, clip=True)
 rawData = tifffile.imread(stackFilePath)   # load linear intensity data from stack. Dimension (Y, Z, X)
