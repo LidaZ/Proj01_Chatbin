@@ -75,6 +75,7 @@ dataType = return_datatype(DataId)
 checkFile(root + '\\' + DataId[:-4] + '_IntImg.tif')
 checkFile(root + '\\' + DataId[:-4] + '_view.tif')
 
+sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing')
 # # # - - - initialize data parameters from config/header, enable memory mapping - - - # # #
 if dataType is not None:
     if dataType == 'timelapse':  # # # # # # # # # #
