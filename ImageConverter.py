@@ -192,7 +192,7 @@ for FileId in range(FileNum):
 
             # # # - - - print progress bar - - - # # #
             total_ind = index + batch_id * dim_y_batch
-            if total_ind % int(dim_y/100) == 0:
+            if (total_ind*100) % int(dim_y) == 0:  # magnify x100 to avoid error when dim_y<100 even <10
                 sys.stdout.write('\r')
                 j = (total_ind + 1) / dim_y
                 sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing' + ': '+str(FileId+1)+'/'+str(FileNum))
