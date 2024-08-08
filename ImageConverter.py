@@ -101,8 +101,8 @@ if dataType is not None:
 
 # # # - - - - enable batch process when engaging large file - - - # # #
 # # # # # - - - - get process batch number - - - # # # # #
-if np.shape(rawDat)[0]/1e9 > 2:  # if file size is larger than 2GB, enable batch process
-    proc_batch = 2 ** ( int(np.floor(np.shape(rawDat)[0]/1e9)) - 1 ).bit_length()  # find the smallest power of 2 greater than file size in GB as batch number
+if np.shape(rawDat)[0]/1e9 > batch_initial_limit:  # if file size is larger than 2GB, enable batch process
+    proc_batch = 2 ** ( int(np.floor(np.shape(rawDat)[0]/1e9)) - 2 ).bit_length()  # find the smallest power of 2 greater than file size in GB as batch number
     if dim_y % proc_batch != 0:
         raise ValueError('Y dimension is ' + str(dim_y) + ', reset process batch number to make dim_y divisible')
         patch = Tk();  E = Entry(patch);  E.pack();  B = Button(patch, text = "Reset batch number", command = close_window);  B.pack()
@@ -216,13 +216,10 @@ if save_view and rasterRepeat > 1:
 if save_video and dataType == 'timelapse':
     out.release();     cv2.destroyAllWindows()
 
-del rawDat
-file.close()
-gc.collect()
-#######
-# tifffile.imwrite(, bigtiff=True)
-# a = tifffile.memmap()
-# tifffile.imwrite(, append=True)
+# del rawDat
+# file.close()
+# gc.collect()
+
 
 
 
