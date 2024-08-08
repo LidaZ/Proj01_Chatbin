@@ -44,7 +44,7 @@ save_video = False  # (Only for dtype='timelapse') set as True if save Int_view 
 display_proc = False  # Set as True if monitor img during converting
 gpu_proc = True
 
-batch_initial_limit = 2.5  # GB, set the file size limit exceeding which enabling batch process
+batch_initial_limit = 3  # GB, set the file size limit exceeding which enabling batch process
 proc_batch = 1
 # # # - - - - - - popup box to select system type - - - - - - # # #
 # def sys_select(op):
@@ -111,7 +111,7 @@ for FileId in range(FileNum):
         proc_batch = 1
     elif dataType == '3d':
         if np.shape(rawDat)[0]/1e9 > batch_initial_limit:  # if file size is larger than 2GB, enable batch process
-            proc_batch = 2 ** ( int(np.floor(np.shape(rawDat)[0]/1e9)) - 1 ).bit_length()  # find the smallest power of 2 greater than file size in GB as batch number
+            proc_batch = 2 ** ( int(np.floor(np.shape(rawDat)[0]/1e9)) - 2 ).bit_length()  # find the smallest power of 2 greater than file size in GB as batch number
             if dim_y % proc_batch != 0:
                 raise ValueError('Y dimension is ' + str(dim_y) + ', reset process batch number to make dim_y divisible')
                 patch = Tk();  E = Entry(patch);  E.pack();  B = Button(patch, text = "Reset batch number", command = close_window);  B.pack()
@@ -192,18 +192,15 @@ for FileId in range(FileNum):
 
             # # # - - - print progress bar - - - # # #
             total_ind = index + batch_id * dim_y_batch
-            if (total_ind*100) % int(dim_y) == 0:  # magnify x100 to avoid error when dim_y<100 even <10
-                sys.stdout.write('\r')
-                j = (total_ind + 1) / dim_y
-                sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing' + ': '+str(FileId+1)+'/'+str(FileNum))
-                sys.stdout.flush();  time.sleep(0.05)
+            # if (total_ind*100) % int(dim_y) == 0:  # magnify x100 to avoid error when dim_y<100 even <10
+            sys.stdout.write('\r')
+            j = (total_ind + 1) / dim_y
+            sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing' + ': '+str(FileId+1)+'/'+str(FileNum))
+            sys.stdout.flush();  time.sleep(0.01)
         # # # - - - check if vol exists when datatype is '3D' - - - # # #
-        try:
-            vol
-        except NameError:
-            vol = None
-        else:
-            del vol
+        try:  vol
+        except NameError:  vol = None
+        else:  del vol
         # # # - - - save LinearIntImg as Tiff stack - - - # # #
         sys.stdout.write('\r')
         sys.stdout.write("[%-20s] %d%%" % ('=' * int(20), 100) + ' saving stack images' + ': '+str(FileId+1)+'/'+str(FileNum))
