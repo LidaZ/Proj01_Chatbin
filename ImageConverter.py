@@ -79,7 +79,7 @@ for FileId in range(FileNum):
     # # # - - - check if Tiff stack file exist - - - # # #
     checkFile(root + '\\' + DataId[:-4] + '_IntImg.tif')
     checkFile(root + '\\' + DataId[:-4] + '_view.tif')
-
+    sys.stdout.write('\r')
     sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': '+str(FileId+1)+'/'+str(FileNum))
 
     # # # - - - initialize data parameters from config/header, enable memory mapping - - - # # #
