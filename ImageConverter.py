@@ -196,7 +196,7 @@ for FileId in range(FileNum):
             sys.stdout.write('\r')
             j = (total_ind + 1) / dim_y
             sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing' + ': '+str(FileId+1)+'/'+str(FileNum))
-            sys.stdout.flush();  time.sleep(0.01)
+            sys.stdout.flush();  # time.sleep(0.01)
         # # # - - - check if vol exists when datatype is '3D' - - - # # #
         try:  vol
         except NameError:  vol = None
