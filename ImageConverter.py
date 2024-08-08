@@ -111,7 +111,7 @@ for FileId in range(FileNum):
         proc_batch = 1
     elif dataType == '3d':
         if np.shape(rawDat)[0]/1e9 > batch_initial_limit:  # if file size is larger than 2GB, enable batch process
-            proc_batch = 2 ** ( int(np.floor(np.shape(rawDat)[0]/1e9)) - 1 ).bit_length()  # find the smallest power of 2 greater than file size in GB as batch number
+            proc_batch = 2 ** ( int(np.floor(np.shape(rawDat)[0]/1e9)) - 2 ).bit_length()  # find the smallest power of 2 greater than file size in GB as batch number
             if dim_y % proc_batch != 0:
                 raise ValueError('Y dimension is ' + str(dim_y) + ', reset process batch number to make dim_y divisible')
                 patch = Tk();  E = Entry(patch);  E.pack();  B = Button(patch, text = "Reset batch number", command = close_window);  B.pack()
