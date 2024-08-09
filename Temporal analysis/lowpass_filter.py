@@ -6,11 +6,11 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 
 
-def butter_lowpass_filter(data, cutoff, fs, order):
+def butter_lowpass_filter(data, cutoff, fs, order, axis):
     normal_cutoff = cutoff / (0.5 * fs)
     # Get the filter coefficients
     b, a = butter(order, normal_cutoff, btype='low', analog=False)
-    y = filtfilt(b, a, data)
+    y = filtfilt(b, a, data, axis=axis)
     return y
 
 

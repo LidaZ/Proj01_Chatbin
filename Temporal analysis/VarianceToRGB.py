@@ -19,11 +19,10 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Qt5Agg")
 
-# # # - - - [1,33多一帧], [34, 65], [66, 97], [98, 129]..., [3938, 3969], [3970, 4000少一帧]- - - # # #
-rasterRepeat = 50
-# folderPath = r"F:\Data_2024\20240626_jurkat\lv-1hr"  # Open "_IntImg.tif" file
-# stackname = "Storage_20240626_13h15m17s_IntImg"  # Storage_20240626_13h24m16s_IntImg / Storage_20240626_13h15m17s_IntImg
-# stackFilePath = folderPath + "\\" + stackname + ".tif"
+
+# # # - - - [1],[2, 33多一帧], [34, 65], [66, 97], [98, 129]..., [3938, 3969], [3970, 4000少一帧]- - - # # #
+rasterRepeat = 32
+errorShiftFrame = 1  # should be = 0 after fixing raster scan error
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*")])
 DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath);  tk.destroy()
 print('Load data folder: ' + root)
@@ -31,54 +30,63 @@ fs = 50  # Hz, B-scan frequency during acquisition
 cutoff = 0.5;  order = 1  # (cutoff frequency = 0.5, filtering order = 2), lowpass filter to remove DC component before computing variance
 colormap = cm.rainbow
 norm = matplotlib.colors.Normalize(vmin=0, vmax=2, clip=True)
-rawData = tifffile.imread(stackFilePath)   # load linear intensity data from stack. Dimension (Y, Z, X)
-dim_y, dim_z, dim_x = np.shape(rawData);  yPosition = dim_y / rasterRepeat
-rawDataRotat = np.swapaxes(rawData, 0, 2)  # rotate en-face plane for 90 degree, so that fast scan (X) is horizontal axis to easy 2D FFT. Dimension (X, Z, Y)
-varProj = np.zeros((dim_z, dim_x, 3), 'uint8')
-varProj_sat = np.ones((dim_x), 'float32')
-hueRange = [0, 0.05]  # variance: 0~0.1 / std: 0~
+
+# # # - - - read size of tiff stack - - - # # #
+rawDat = tifffile.imread(stackFilePath)   # load linear intensity data from stack. Dimension (Y, Z, X)
+# rawDat = tifffile.memmap(stackFilePath)
+dim_y, dim_z, dim_x = np.shape(rawDat)
+if rasterRepeat > 1:  dim_y_raster = int(dim_y / rasterRepeat)
+
+# # # - - - initialize variance-to-rgb array, define the display variance range - - - # # #
+batchList = np.linspace(0, dim_y, int(dim_y/rasterRepeat), endpoint=False)
+varRgbImg = np.zeros((dim_y_raster, dim_z, dim_x, 3), 'uint8')
+hueRange = [0, 1]  # variance: 0~0.1 / std: 0~
 satRange = [0, 0.3]  # intensity: 0~1
- 
-
-for depthIndex in tqdm(range(dim_z)): # dim_z
-    for yIndex in range(yPosition):
-        rawDataRotat_rasterSeg = rawDataRotat[:, :, 0:rasterRepeat]
-    # depthIndex = 590  # # #
-    enfaceData = rawDataRotat[:, depthIndex, :]  # # (dim_x, dim_y)
-    enfaceData_lpfilt = butter_lowpass_filter(enfaceData, cutoff, fs, order)
-    enfaceData_lp = enfaceData - enfaceData_lpfilt
-    # plt.figure(11);  plt.clf();  plt.plot(enfaceData[548, :]); plt.axis([0,350,-1,6]); # plt.plot(enfaceData_lp[550, :])
-
-    varProj_proj = np.max(enfaceData, axis=1)  # max projection along Y (time)
-    varProj_val = np.clip((varProj_proj - satRange[0]) / (satRange[1] - satRange[0]), 0, 1)
-    varProj_var = np.var(enfaceData_lp, axis=1)  # np.var()  /  np.std()
-    varProj_var_norm = np.divide(varProj_var, np.square(varProj_proj))  # variance normalized by max intensity *SQUARE*, should be robust to noise
-    varProj_hue = np.multiply(np.clip((varProj_var_norm - hueRange[0]) / (hueRange[1] - hueRange[0]), 0, 1), 0.6)  # limit color display range from red to blue
-    varProj_rgb = hsv_to_rgb(np.transpose([varProj_hue, varProj_val, varProj_val]))  # [varProj_hue, varProj_sat, varProj_val]
-    varProj[depthIndex, :, :] = varProj_rgb * 255
-
-    # varProj_rgb = num_to_rgb(np.var(enfaceData_lp, axis=1), max_val=20)
-    # varProj_hsv = colorsys.rgb_to_hsv(varProj_rgb[0], varProj_rgb[1], varProj_rgb[2])
-    # varProj[depthIndex, :, ] = np.transpose(varProj_rgb)
-    # print(str(depthIndex) + '/' + str(dim_z))
-
-figsize_mag = 7
-plt.figure(16, figsize=(figsize_mag, dim_z/dim_x*figsize_mag));  plt.clf();  plt.imshow(varProj, vmin=0, vmax=1)
-plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-gc.collect()
 
 
-# from scipy.stats import linregress
-import numpy as np
-from sklearn.metrics import r2_score as linregress
-def rsquare(measure, predict):
-    e1 = np.subtract(measure, predict)**2
-    e2 = np.subtract(measure, np.mean(measure))**2
-    r2 = 1 - np.sum(e1) / np.sum(e2)
-    return r2
+for batch_id in range(1):  # dim_y_raster
+    # # # - - - filt dc component, extract fluctuation with f>0.5hz when fs=50hz - - - # # #
+    rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id+1)*rasterRepeat, :, :]  # [32(y), 800(z), 250(x)]
+    # # # should be: rawDat[batch_id*rasterRepeat:(batch_id+1)*rasterRepeat, :, :], scan proc error
+    # # # results in one additional frame at [0], and one frame lost at [4001]
+    rawDat_batch_dc = butter_lowpass_filter(rawDat_batch, cutoff, fs, order, 0)
+    rawDat_batch_filt = rawDat_batch - rawDat_batch_dc
 
-# nc = [13.5, 12.7, 12.6, 12.3, 13.2, 12.5, 12.1, 12]
-# oct = [12.5, 11.2, 11.9, 13.2, 12.55, 11.3, 11.5, 12.5]  # [12.5, 12.5, 12.65, 13.2, 13.05, 12.3, 12, 12.5]
-# plt.figure(21); plt.clf(); plt.scatter(oct, nc);  plt.axis([11, 14, 11, 14])
-# r2 = rsquare(oct, nc)
-# print('R2 is: ', r2)
+    # # # - - - compute max int at each pix as value - - - # # #
+    batchProj_valMax = np.max(rawDat_batch_filt, axis=0)
+    batchProj_val = np.clip((batchProj_valMax-satRange[0]) / (satRange[1]-satRange[0]), 0, 1)
+
+    # # # - - - compute variance/std/freq at each pix - - - # # #
+    batchProj_var = np.var(rawDat_batch_filt, axis=0)  # np.var() / np.std()
+    batchProj_varNorm = np.divide(batchProj_var, np.square(batchProj_valMax))
+    batchProj_varHue = np.multiply(np.clip(
+        (batchProj_varNorm-hueRange[0]) / (hueRange[1]-hueRange[0]), 0, 1), 0.6)  # limit color display range from red to blue
+
+    # # # - - - convert to hue color space - - - # # #
+    batchProj_rgb = hsv_to_rgb(
+        np.transpose([batchProj_varHue, batchProj_val, batchProj_val]))  # [varProj_hue, varProj_sat, varProj_val]
+    varRgbImg[batch_id, :, :, :] = np.swapaxes(batchProj_rgb, 0, 1) * 255
+
+    # # # - - - fresh progress bar display - - - # # #
+    sys.stdout.write('\r')
+    j = (batch_id + 1) / dim_y_raster
+    sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing')
+
+    figsize_mag = 3
+    plt.figure(16, figsize=(figsize_mag, dim_z/dim_x*figsize_mag));  plt.clf()
+    plt.imshow(np.swapaxes(batchProj_rgb, 0, 1), vmin=0, vmax=1)
+    plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.pause(0.01)
+    gc.collect()
+
+    # # # - - - check int fluctuation profile - - - # # #
+    pix_loc = [250, 60]
+    plt.figure(14); plt.clf(); plt.plot(rawDat_batch[:, pix_loc[0], pix_loc[1]])
+    plt.plot(rawDat_batch_dc[:, pix_loc[0], pix_loc[1]])
+    plt.plot(rawDat_batch_filt[:, pix_loc[0], pix_loc[1]])
+    print('var is: ', str(np.var(rawDat_batch_filt[:, pix_loc[0], pix_loc[1]])))
+
+
+# # # - - - save image as tiff stack - - - # # #
+# tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'VarImg.tif', varRgbImg)
+

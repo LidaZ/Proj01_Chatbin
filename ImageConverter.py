@@ -35,7 +35,7 @@ def checkFile(path):
 
 
 sys_ivs800 = True
-rasterRepeat = 1
+rasterRepeat = 32
 
 save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
 save_tif = True  # Set as True if save intensity img as 3D stack .tiff file in the current folder
@@ -44,7 +44,7 @@ save_video = False  # (Only for dtype='timelapse') set as True if save Int_view 
 display_proc = False  # Set as True if monitor img during converting
 gpu_proc = True
 
-batch_initial_limit = 3  # GB, set the file size limit exceeding which enabling batch process
+batch_initial_limit = 2.5  # GB, set the file size limit exceeding which enabling batch process
 proc_batch = 1
 # # # - - - - - - popup box to select system type - - - - - - # # #
 # def sys_select(op):
@@ -78,7 +78,7 @@ for FileId in range(FileNum):
 
     # # # - - - check if Tiff stack file exist - - - # # #
     checkFile(root + '\\' + DataId[:-4] + '_IntImg.tif')
-    checkFile(root + '\\' + DataId[:-4] + '_view.tif')
+    checkFile(root + '\\' + DataId[:-4] + '_3d_view.tif')
     sys.stdout.write('\r')
     sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': '+str(FileId+1)+'/'+str(FileNum))
 
@@ -111,7 +111,7 @@ for FileId in range(FileNum):
         proc_batch = 1
     elif dataType == '3d':
         if np.shape(rawDat)[0]/1e9 > batch_initial_limit:  # if file size is larger than 2GB, enable batch process
-            proc_batch = 2 ** ( int(np.floor(np.shape(rawDat)[0]/1e9)) - 2 ).bit_length()  # find the smallest power of 2 greater than file size in GB as batch number
+            proc_batch = 2 ** ( int(np.floor(np.shape(rawDat)[0]/1e9)) - 1 ).bit_length()  # find the smallest power of 2 greater than file size in GB as batch number
             if dim_y % proc_batch != 0:
                 raise ValueError('Y dimension is ' + str(dim_y) + ', reset process batch number to make dim_y divisible')
                 patch = Tk();  E = Entry(patch);  E.pack();  B = Button(patch, text = "Reset batch number", command = close_window);  B.pack()
@@ -192,7 +192,6 @@ for FileId in range(FileNum):
 
             # # # - - - print progress bar - - - # # #
             total_ind = index + batch_id * dim_y_batch
-            # if (total_ind*100) % int(dim_y) == 0:  # magnify x100 to avoid error when dim_y<100 even <10
             sys.stdout.write('\r')
             j = (total_ind + 1) / dim_y
             sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing' + ': '+str(FileId+1)+'/'+str(FileNum))
@@ -209,7 +208,8 @@ for FileId in range(FileNum):
             octImgVol_linear = np.power(10, octImgVol_rol / 10)  # convert to linear intensity (square of signal amplitude)
             if gpu_proc: octImgVol_sav = octImgVol_linear.get()
             else: octImgVol_sav = octImgVol_linear
-            tifffile.imwrite(root + '\\' + DataId[:-4] + '_IntImg.tif', octImgVol_sav.astype(dtype='float32'), append=True)  # , compression='zlib', compressionargs={'level': 8})
+            tifffile.imwrite(root + '\\' + DataId[:-4] + '_IntImg.tif', octImgVol_sav.astype(dtype='float32'),
+                             append=True, metadata=None) #, bigtiff=True)  # , compression='zlib', compressionargs={'level': 8})
 
         # # # - - - save LogIntImg as Tiff stack - - - # # #
         if save_view and rasterRepeat == 1:
@@ -230,9 +230,9 @@ for FileId in range(FileNum):
     if save_video and dataType == 'timelapse':
         out.release();     cv2.destroyAllWindows()
 
-# del rawDat
-# file.close()
-# gc.collect()
+del rawDat
+file.close()
+gc.collect()
 
 
 
