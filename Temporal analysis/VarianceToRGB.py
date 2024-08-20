@@ -23,8 +23,12 @@ matplotlib.use("Qt5Agg")
 # # # - - - [1],[2, 33多一帧], [34, 65], [66, 97], [98, 129]..., [3938, 3969], [3970, 4000少一帧]- - - # # #
 rasterRepeat = 32
 errorShiftFrame = 1  # should be = 0 after fixing raster scan error
-tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*")])
+saveImg = False
+
+tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_IntImg.tif")])
 DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath);  tk.destroy()
+if '_IntImg' in DataId:  pass
+else:  raise(ValueError('Select _IntImg.tif file'))
 print('Load data folder: ' + root)
 fs = 50  # Hz, B-scan frequency during acquisition
 cutoff = 0.5;  order = 1  # (cutoff frequency = 0.5, filtering order = 2), lowpass filter to remove DC component before computing variance
@@ -35,30 +39,37 @@ norm = matplotlib.colors.Normalize(vmin=0, vmax=2, clip=True)
 rawDat = tifffile.imread(stackFilePath)   # load linear intensity data from stack. Dimension (Y, Z, X)
 # rawDat = tifffile.memmap(stackFilePath)
 dim_y, dim_z, dim_x = np.shape(rawDat)
-if rasterRepeat > 1:  dim_y_raster = int(dim_y / rasterRepeat)
-
+if rasterRepeat > 1:
+    dim_y_raster = int(dim_y / rasterRepeat)
+elif rasterRepeat == 1:
+    dim_y_raster = 1
+    rasterRepeat = dim_y
 # # # - - - initialize variance-to-rgb array, define the display variance range - - - # # #
 batchList = np.linspace(0, dim_y, int(dim_y/rasterRepeat), endpoint=False)
 varRgbImg = np.zeros((dim_y_raster, dim_z, dim_x, 3), 'uint8')
-hueRange = [0, 1]  # variance: 0~0.1 / std: 0~
-satRange = [0, 0.3]  # intensity: 0~1
+hueRange = [0, 0.3]  # variance: 0~0.1 / std: 0~0.3
+satRange = [0, 1]  # intensity: 0~1
 
 
-for batch_id in range(1):  # dim_y_raster
+# dim_y_raster = 1
+for batch_id in range(dim_y_raster):
     # # # - - - filt dc component, extract fluctuation with f>0.5hz when fs=50hz - - - # # #
     rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id+1)*rasterRepeat, :, :]  # [32(y), 800(z), 250(x)]
     # # # should be: rawDat[batch_id*rasterRepeat:(batch_id+1)*rasterRepeat, :, :], scan proc error
     # # # results in one additional frame at [0], and one frame lost at [4001]
     rawDat_batch_dc = butter_lowpass_filter(rawDat_batch, cutoff, fs, order, 0)
-    rawDat_batch_filt = rawDat_batch - rawDat_batch_dc
+    # # # - - - disable DC component filter function for now - - - # # #
+    rawDat_batch_filt = rawDat_batch # - rawDat_batch_dc
 
     # # # - - - compute max int at each pix as value - - - # # #
     batchProj_valMax = np.max(rawDat_batch_filt, axis=0)
+    # batchProj_sat = batchProj_valMax / np.max(batchProj_valMax)
     batchProj_val = np.clip((batchProj_valMax-satRange[0]) / (satRange[1]-satRange[0]), 0, 1)
 
     # # # - - - compute variance/std/freq at each pix - - - # # #
-    batchProj_var = np.var(rawDat_batch_filt, axis=0)  # np.var() / np.std()
+    batchProj_var = np.std(rawDat_batch_filt, axis=0)  # np.var() / np.std()
     batchProj_varNorm = np.divide(batchProj_var, np.square(batchProj_valMax))
+
     batchProj_varHue = np.multiply(np.clip(
         (batchProj_varNorm-hueRange[0]) / (hueRange[1]-hueRange[0]), 0, 1), 0.6)  # limit color display range from red to blue
 
@@ -79,14 +90,15 @@ for batch_id in range(1):  # dim_y_raster
     plt.pause(0.01)
     gc.collect()
 
-    # # # - - - check int fluctuation profile - - - # # #
-    pix_loc = [250, 60]
-    plt.figure(14); plt.clf(); plt.plot(rawDat_batch[:, pix_loc[0], pix_loc[1]])
-    plt.plot(rawDat_batch_dc[:, pix_loc[0], pix_loc[1]])
-    plt.plot(rawDat_batch_filt[:, pix_loc[0], pix_loc[1]])
-    print('var is: ', str(np.var(rawDat_batch_filt[:, pix_loc[0], pix_loc[1]])))
+    # # # - - - check int fluctuation profile at designated pixel - - - # # #
+    # pix_loc = [250, 60]  # [Y_index, X_index]
+    # plt.figure(14); plt.clf(); plt.plot(rawDat_batch[:, pix_loc[0], pix_loc[1]])
+    # plt.plot(rawDat_batch_dc[:, pix_loc[0], pix_loc[1]])
+    # plt.plot(rawDat_batch_filt[:, pix_loc[0], pix_loc[1]])
+    # print('var is: ', str(np.var(rawDat_batch_filt[:, pix_loc[0], pix_loc[1]])))
 
 
 # # # - - - save image as tiff stack - - - # # #
-# tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'VarImg.tif', varRgbImg)
+if saveImg:
+    tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'VarImg.tif', varRgbImg)
 
