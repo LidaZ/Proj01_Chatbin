@@ -47,7 +47,7 @@ elif rasterRepeat == 1:
 # # # - - - initialize variance-to-rgb array, define the display variance range - - - # # #
 batchList = np.linspace(0, dim_y, int(dim_y/rasterRepeat), endpoint=False)
 varRgbImg = np.zeros((dim_y_raster, dim_z, dim_x, 3), 'uint8')
-hueRange = [0, 0.3]  # variance: 0~0.1 / std: 0~0.3
+hueRange = [0.0, 0.15]  # variance: 0~0.15 / std: 0~0.3
 satRange = [0, 1]  # intensity: 0~1
 
 
@@ -67,7 +67,7 @@ for batch_id in range(dim_y_raster):
     batchProj_val = np.clip((batchProj_valMax-satRange[0]) / (satRange[1]-satRange[0]), 0, 1)
 
     # # # - - - compute variance/std/freq at each pix - - - # # #
-    batchProj_var = np.std(rawDat_batch_filt, axis=0)  # np.var() / np.std()
+    batchProj_var = np.var(rawDat_batch_filt, axis=0)  # np.var() / np.std()
     batchProj_varNorm = np.divide(batchProj_var, np.square(batchProj_valMax))
 
     batchProj_varHue = np.multiply(np.clip(
@@ -88,7 +88,6 @@ for batch_id in range(dim_y_raster):
     plt.imshow(np.swapaxes(batchProj_rgb, 0, 1), vmin=0, vmax=1)
     plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
     plt.pause(0.01)
-    gc.collect()
 
     # # # - - - check int fluctuation profile at designated pixel - - - # # #
     # pix_loc = [250, 60]  # [Y_index, X_index]
@@ -97,7 +96,7 @@ for batch_id in range(dim_y_raster):
     # plt.plot(rawDat_batch_filt[:, pix_loc[0], pix_loc[1]])
     # print('var is: ', str(np.var(rawDat_batch_filt[:, pix_loc[0], pix_loc[1]])))
 
-
+gc.collect()
 # # # - - - save image as tiff stack - - - # # #
 if saveImg:
     tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'VarImg.tif', varRgbImg)
