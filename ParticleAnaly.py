@@ -49,7 +49,7 @@ if sys_ivs800: pix_sep = 2  # 2um/pix for IVS-800
 plt.close(11); plt.figure(11, figsize=(13, 4));  plt.clf()
 
 
-folderPath = r"F:\Data_2024\20240626_jurkat\lv-0hr\3D particle analysis"
+folderPath = r"F:\Data_2024\20240626_jurkat\mv-1hr\3D particle analysis"
 analyExcel = "Statistics for Data_3d_view" + ".csv"
 stackImg = "Data_3d_view" + ".tif"
 excelpath = folderPath + "\\" + analyExcel;  stackpath = folderPath + "\\" + stackImg
@@ -60,7 +60,7 @@ spas = (dim_y*pix_sep/1000)*(dim_x*pix_sep/1000)*(dim_z*1.9/1000) / 1000 # 1000 
 df = pandas.read_csv(excelpath)
 if 'mv' in excelpath: ptcolor = 'green'
 elif 'lv' in excelpath: ptcolor = 'red'
-elif 'hv' in excelpath: ptcolor = 'gray'
+elif 'hv' in excelpath: ptcolor = 'red'
 else: ptcolor = 'gray'
 # size_list = df['Area'][:]; dia_list = df['Feret'][:]; meanInt_list = df['Mean'][:]; circ_list = df['Round'][:]
 # min_dia_list = df['MinFeret'][:]  # only for test 'Particle by IVS800' avoid influence from multi reflection in bead
@@ -75,18 +75,18 @@ plt.subplot(1,3,1)#.cla()
 meanInt = meanInt_list / 255
 sufix = '(-10~70 dB)'
 if sys_ivs800: sufix = '(-25~20 dB)'
-plt.hist(meanInt, facecolor=ptcolor, bins=50, range=[0.1, 0.5], alpha=0.35, density=True); plt.title('Mean Intensity per cell')
+plt.hist(meanInt, facecolor=ptcolor, bins=45, range=[0.1, 0.5], alpha=0.35, density=True); plt.title('Mean Intensity per cell')
 plt.xlabel('Normalize intensity' + sufix); plt.ylabel('Density')
 plt.axis([0.1, 0.45, 0, 30]); plt.pause(0.01)
 # # # size histogram
 ax = plt.subplot(1,3,2)#.cla()
 diameter = dia_list * pix_sep
-plt.hist(diameter, facecolor=ptcolor, bins=50, range=[1, 40], alpha=0.35, density=True); plt.title('Mean size per cell');
-plt.xlabel('Diameter (um)');  # ax.set_xscale('log') #plt.axis([0, 40, 0, 0.35])
+plt.hist(diameter, facecolor=ptcolor, bins=45, range=[1, 40], alpha=0.35, density=True); plt.title('Mean size per cell');
+plt.xlabel('Diameter (um)');   plt.axis([0, 40, 0, 0.25]); #  ax.set_xscale('log')
 plt.pause(0.01)
 # # # circularity histogram
 plt.subplot(1,3,3)#.cla()
-plt.hist(circ_list, facecolor=ptcolor, bins=50, range=[0, 5], alpha=0.35, density=True); plt.title('STD of diameter per cell');
+plt.hist(circ_list, facecolor=ptcolor, bins=45, range=[0, 5], alpha=0.35, density=True); plt.title('STD of diameter per cell');
 plt.xlabel('Regularity (A.u.)'); plt.axis([0, 5, 0, 1.75])
 
 # plt.text(1, 2.2, 'Cell count number is ' + f"{total_cnt/spas:.2E}" + "/mL")

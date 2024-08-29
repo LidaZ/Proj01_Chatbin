@@ -23,13 +23,13 @@ matplotlib.use("Qt5Agg")
 # # # - - - [1],[2, 33多一帧], [34, 65], [66, 97], [98, 129]..., [3938, 3969], [3970, 4000少一帧]- - - # # #
 rasterRepeat = 32
 errorShiftFrame = 1  # should be = 0 after fixing raster scan error
-saveImg = False
+saveImg = True
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_IntImg.tif")])
 DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath);  tk.destroy()
 if '_IntImg' in DataId:  pass
 else:  raise(ValueError('Select _IntImg.tif file'))
-print('Load data folder: ' + root)
+print('Loading data folder: ' + root)
 fs = 50  # Hz, B-scan frequency during acquisition
 cutoff = 0.5;  order = 1  # (cutoff frequency = 0.5, filtering order = 2), lowpass filter to remove DC component before computing variance
 colormap = cm.rainbow
@@ -47,7 +47,7 @@ elif rasterRepeat == 1:
 # # # - - - initialize variance-to-rgb array, define the display variance range - - - # # #
 batchList = np.linspace(0, dim_y, int(dim_y/rasterRepeat), endpoint=False)
 varRgbImg = np.zeros((dim_y_raster, dim_z, dim_x, 3), 'uint8')
-hueRange = [0.0, 0.15]  # variance: 0~0.15 / std: 0~0.3
+hueRange = [0.02, 0.15]  # variance: 0~0.15 / std: 0~0.3
 satRange = [0, 1]  # intensity: 0~1
 
 

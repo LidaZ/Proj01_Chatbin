@@ -94,9 +94,9 @@ _, pval = stats.ttest_ind(request_e, request_c, equal_var=False);  print(pval)
 # # print('mode of diameter is: ', str(mode_diameter))
 
 # - - - - Pearson test to find out correlation between viability, mean intensity, diameter, and aspect ratio - - - -
-viability_oxy = [82.00, 59.10, 49.70, 45.20, 49.70]; viability_cont = [86.90, 83.60, 85.90, 84.90, 85.90]
+viability_oxy = [90, 70, 55.3, 47.6, 49.8]; viability_cont = [91.8, 92.4, 86.1, 88.4, 86.7]
 viability = viability_oxy + viability_cont  # oxydol-treated and control
-meanInt_oxy = [49.00,50.13,52.54,50.54,49.85]; meanInt_cont = [50.68,48.75,47.33,47.32,48.01]
+meanInt_oxy = [77.14, 102.1665, 107.23, 112.67, 122.58]; meanInt_cont = [76.32, 99.09, 97.853, 103.31, 86.86]
 meanInt = meanInt_oxy + meanInt_cont
 diameter_oxy = [11.724,12.35,12.88,12.31, 10.237]; diameter_cont = [11.49,11.3465,9.8095,9.6875, 9.2509]
 diameter_y = diameter_oxy + diameter_cont; diameter = [i * 2 for i in diameter_y]
@@ -107,5 +107,5 @@ plt.figure(21); plt.clf();
 plt.scatter(meanInt_oxy, viability_oxy, color='xkcd:pink')
 plt.scatter(meanInt_cont, viability_cont, color='xkcd:green')
 
-corr, _ = pearsonr(viability, AspectRatio);  print(corr)
+corr, _ = pearsonr(viability, meanInt);  print(corr)
 
