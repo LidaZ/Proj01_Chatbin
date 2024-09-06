@@ -34,7 +34,7 @@ def checkFile(path):
     except OSError: pass
 
 
-sys_ivs800 = True
+sys_ivs800 = False
 rasterRepeat = 32
 
 save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
@@ -62,7 +62,7 @@ proc_batch = 1
 
 if gpu_proc:
     import cupy as np;  # from cupyx.scipy.ndimage import zoom # import nvTIFF (failed)
-octRangedB = [-10, 70]  # set dynamic range of log OCT signal display
+octRangedB = [-10, 50]  # set dynamic range of log OCT signal display
 if sys_ivs800:
     octRangedB = [-25, 20]
 [dim_y, dim_z, dim_x, FrameRate] = [0, 0, 0, 30];  # aspect_ratio = 1
@@ -195,7 +195,7 @@ for FileId in range(FileNum):
             j = (total_ind + 1) / dim_y
             sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing' + ': '+str(FileId+1)+'/'+str(FileNum))
             sys.stdout.flush()
-            time.sleep(0.01)
+            # time.sleep(0.01)
         # # # - - - check if vol exists when datatype is '3D' - - - # # #
         try:  vol
         except NameError:  vol = None

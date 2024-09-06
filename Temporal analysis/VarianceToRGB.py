@@ -21,9 +21,11 @@ matplotlib.use("Qt5Agg")
 
 
 # # # - - - [1],[2, 33多一帧], [34, 65], [66, 97], [98, 129]..., [3938, 3969], [3970, 4000少一帧]- - - # # #
+sys_ivs800 = False
 rasterRepeat = 32
-errorShiftFrame = 1  # should be = 0 after fixing raster scan error
+errorShiftFrame = 0  # = 1 before 2024/09/05. Bug in scan pattern was fixed.
 saveImg = True
+
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_IntImg.tif")])
 DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath);  tk.destroy()
@@ -47,35 +49,39 @@ elif rasterRepeat == 1:
 # # # - - - initialize variance-to-rgb array, define the display variance range - - - # # #
 batchList = np.linspace(0, dim_y, int(dim_y/rasterRepeat), endpoint=False)
 varRgbImg = np.zeros((dim_y_raster, dim_z, dim_x, 3), 'uint8')
-hueRange = [0.02, 0.15]  # variance: 0~0.15 / std: 0~0.3
-satRange = [0, 1]  # intensity: 0~1
+batchProj_sat = np.ones((dim_z, dim_x), 'float32')
+hueRange = [0.4, 1.0]  # variance: 0~0.15 / std: 0~0.3
+
+octRangedB = [0, 50]  # set dynamic range of log OCT signal display
+if sys_ivs800:  octRangedB = [-25, 20]
 
 
-# dim_y_raster = 1
+# dim_y_raster = 10
 for batch_id in range(dim_y_raster):
     # # # - - - filt dc component, extract fluctuation with f>0.5hz when fs=50hz - - - # # #
-    rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id+1)*rasterRepeat, :, :]  # [32(y), 800(z), 250(x)]
+    rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id+1)*rasterRepeat, :, :]  # [32(y), 300(z), 256(x)]
     # # # should be: rawDat[batch_id*rasterRepeat:(batch_id+1)*rasterRepeat, :, :], scan proc error
     # # # results in one additional frame at [0], and one frame lost at [4001]
     rawDat_batch_dc = butter_lowpass_filter(rawDat_batch, cutoff, fs, order, 0)
     # # # - - - disable DC component filter function for now - - - # # #
-    rawDat_batch_filt = rawDat_batch # - rawDat_batch_dc
+    rawDat_batch_filt = rawDat_batch # - rawDat_batch_dc        # linear signal int
 
     # # # - - - compute max int at each pix as value - - - # # #
-    batchProj_valMax = np.max(rawDat_batch_filt, axis=0)
+    batchProj_valMax = np.log10( np.max(rawDat_batch_filt, axis=0) ) # Log int, not in dB (x10) yet
     # batchProj_sat = batchProj_valMax / np.max(batchProj_valMax)
-    batchProj_val = np.clip((batchProj_valMax-satRange[0]) / (satRange[1]-satRange[0]), 0, 1)
+    batchProj_val = np.clip((np.multiply(10, batchProj_valMax)-octRangedB[0]) / (octRangedB[1]-octRangedB[0]), 0, 1)   # clipped Log int in dB
+    plt.figure(13); plt.clf(); plt.imshow(batchProj_val, cmap='gray')
 
     # # # - - - compute variance/std/freq at each pix - - - # # #
-    batchProj_var = np.var(rawDat_batch_filt, axis=0)  # np.var() / np.std()
-    batchProj_varNorm = np.divide(batchProj_var, np.square(batchProj_valMax))
+    batchProj_var = np.var(batchProj_valMax, axis=0)  # np.var() / np.std(); # log int = batchProj_valMax, linear int = rawDat_batch_filt
+    batchProj_varNorm = np.divide(batchProj_var, (batchProj_val+1))
 
     batchProj_varHue = np.multiply(np.clip(
         (batchProj_varNorm-hueRange[0]) / (hueRange[1]-hueRange[0]), 0, 1), 0.6)  # limit color display range from red to blue
 
     # # # - - - convert to hue color space - - - # # #
     batchProj_rgb = hsv_to_rgb(
-        np.transpose([batchProj_varHue, batchProj_val, batchProj_val]))  # [varProj_hue, varProj_sat, varProj_val]
+        np.transpose([batchProj_varHue, batchProj_sat, batchProj_val]))  # [varProj_hue, varProj_sat/_val, varProj_val]
     varRgbImg[batch_id, :, :, :] = np.swapaxes(batchProj_rgb, 0, 1) * 255
 
     # # # - - - fresh progress bar display - - - # # #
