@@ -21,10 +21,10 @@ matplotlib.use("Qt5Agg")
 
 
 # # # - - - [1],[2, 33多一帧], [34, 65], [66, 97], [98, 129]..., [3938, 3969], [3970, 4000少一帧]- - - # # #
-sys_ivs800 = False
+sys_ivs800 = True
 rasterRepeat = 32
 errorShiftFrame = 0  # = 1 before 2024/09/05. Bug in scan pattern was fixed.
-saveImg = False
+saveImg = True
 
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_IntImg.tif")])
@@ -50,13 +50,13 @@ elif rasterRepeat == 1:
 batchList = np.linspace(0, dim_y, int(dim_y/rasterRepeat), endpoint=False)
 varRgbImg = np.zeros((dim_y_raster, dim_z, dim_x, 3), 'uint8')
 batchProj_sat = np.ones((dim_z, dim_x), 'float32')
-hueRange = [0., 1.0]  # variance: 0~0.15 / std: 0~0.3
+hueRange = [0., 0.3]  # variance: 0~0.15 / std: 0~0.3
 
 octRangedB = [0, 50]  # set dynamic range of log OCT signal display
-if sys_ivs800:  octRangedB = [-25, 20]
+if sys_ivs800:  octRangedB = [-10, 10]
 
 
-dim_y_raster = 10
+# dim_y_raster = 10
 for batch_id in range(dim_y_raster):
     # # # - - - filt dc component, extract fluctuation with f>0.5hz when fs=50hz - - - # # #
     rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id+1)*rasterRepeat, :, :]  # [32(y), 300(z), 256(x)]
@@ -71,7 +71,7 @@ for batch_id in range(dim_y_raster):
     batchProj_valMax = np.max(rawDat_batch_log, axis=0)  # Log int, not in dB (x10) yet
     # batchProj_sat = batchProj_valMax / np.max(batchProj_valMax)
     batchProj_val = np.clip((np.multiply(10, batchProj_valMax)-octRangedB[0]) / (octRangedB[1]-octRangedB[0]), 0, 1)   # clipped Log int in dB
-    plt.figure(13); plt.clf(); plt.imshow(batchProj_val, cmap='gray')
+    # plt.figure(13); plt.clf(); plt.imshow(batchProj_val, cmap='gray')
 
     # # # - - - compute variance/std/freq at each pix - - - # # #
     batchProj_var = np.var(rawDat_batch_log, axis=0)  # np.var() / np.std(); # log int = batchProj_valMax, linear int = rawDat_batch_filt
