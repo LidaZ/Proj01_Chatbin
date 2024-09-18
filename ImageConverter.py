@@ -21,7 +21,7 @@ def return_datatype(dataid):
     dtype = None
     if dataid[-4:] == '.dat':  dtype = 'timelapse'
     elif dataid[-4:] == '.bin':  dtype = '3d'
-    else: raise ValueError('Unrecognizable data type')
+    else: dtype = None # raise ValueError('Unrecognizable data type')
     return dtype
 
 def close_window():
@@ -36,6 +36,7 @@ def checkFile(path):
 
 sys_ivs800 = True
 rasterRepeat = 32
+multiFolderProcess = True  # if multiple data folders
 
 save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
 save_tif = True  # Set as True if save intensity img as 3D stack .tiff file in the current folder
@@ -44,7 +45,7 @@ save_video = False  # (Only for dtype='timelapse') set as True if save Int_view 
 display_proc = False  # Set as True if monitor img during converting
 gpu_proc = True
 
-batch_initial_limit = 2.  # GB, set the file size limit exceeding which enabling batch process
+batch_initial_limit = 2.5  # GB, set the file size limit exceeding which enabling batch process
 proc_batch = 1
 # # # - - - - - - popup box to select system type - - - - - - # # #
 # def sys_select(op):
@@ -67,9 +68,25 @@ if sys_ivs800:
     octRangedB = [-25, 20]
 [dim_y, dim_z, dim_x, FrameRate] = [0, 0, 0, 30];  # aspect_ratio = 1
 # # # - - - - fetch dir path of data file - - - - # # #
-tk = Tk(); tk.withdraw(); DataFold_list = filedialog.askopenfilename(filetypes=[("", "*")], multiple = True)
-tk.destroy()
-FileNum = np.shape(DataFold_list)[0]
+if multiFolderProcess:
+    tk = Tk(); tk.withdraw(); Fold_list = []; DataFold_list = []; extension = ['.dat', '.bin']
+    folderPath = filedialog.askdirectory()
+    Fold_list.append(folderPath)
+    while len(folderPath) > 0:
+        folderPath = filedialog.askdirectory(initialdir=os.path.dirname(folderPath))
+        if not folderPath:  break
+        Fold_list.append(folderPath)
+    for item in Fold_list:  # list all files contained in each folder
+        fileNameList = os.listdir(item)
+        for n in fileNameList:
+            if any(x in n for x in extension):
+                DataFold_list.append( os.path.join(item, n) )
+    FileNum = len(DataFold_list)
+
+else:
+    tk = Tk(); tk.withdraw(); DataFold_list = filedialog.askopenfilename(filetypes=[("", "*")], multiple = True)
+    tk.destroy()
+    FileNum = np.shape(DataFold_list)[0]
 
 for FileId in range(FileNum):
     DataFold = DataFold_list[FileId]
@@ -235,6 +252,3 @@ del octImgVol
 file.close()
 gc.collect()
 if gpu_proc: np._default_memory_pool.free_all_blocks()
-
-
-
