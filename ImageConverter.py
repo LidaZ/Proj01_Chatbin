@@ -65,7 +65,7 @@ if gpu_proc:
     import cupy as np;  # from cupyx.scipy.ndimage import zoom # import nvTIFF (failed)
 octRangedB = [-10, 50]  # set dynamic range of log OCT signal display
 if sys_ivs800:
-    octRangedB = [-25, 20]
+    octRangedB = [-25, 30]
 [dim_y, dim_z, dim_x, FrameRate] = [0, 0, 0, 30];  # aspect_ratio = 1
 # # # - - - - fetch dir path of data file - - - - # # #
 if multiFolderProcess:
@@ -96,7 +96,7 @@ for FileId in range(FileNum):
     # # # - - - check if Tiff stack file exist - - - # # #
     checkFile(root + '\\' + DataId[:-4] + '_IntImg.tif')
     checkFile(root + '\\' + DataId[:-4] + '_3d_view.tif')
-    sys.stdout.write('\r')
+    sys.stdout.write('\n')
     sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': '+str(FileId+1)+'/'+str(FileNum))
 
     # # # - - - initialize data parameters from config/header, enable memory mapping - - - # # #
@@ -220,6 +220,7 @@ for FileId in range(FileNum):
         # # # - - - save LinearIntImg as Tiff stack - - - # # #
         sys.stdout.write('\r')
         sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' saving stack images' + ': '+str(FileId+1)+'/'+str(FileNum))
+        time.sleep(0.01)
         octImgVol_rol = np.rollaxis(octImgVol[:, :, :], 0, 1)
         if save_tif:
             octImgVol_linear = np.power(10, octImgVol_rol / 10)  # convert to linear intensity (square of signal amplitude)
@@ -246,6 +247,7 @@ for FileId in range(FileNum):
 
     if save_video and dataType == 'timelapse':
         out.release();     cv2.destroyAllWindows()
+
 
 del rawDat, octImgVol_rol
 del octImgVol
