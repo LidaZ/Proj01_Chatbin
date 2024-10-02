@@ -21,10 +21,15 @@ matplotlib.use("Qt5Agg")
 
 
 # # # - - - [1],[2, 33多一帧], [34, 65], [66, 97], [98, 129]..., [3938, 3969], [3970, 4000少一帧]- - - # # #
+errorShiftFrame = 0  # = 1 before 2024/09/05. Bug in scan pattern was fixed.
 sys_ivs800 = True
 rasterRepeat = 32
-errorShiftFrame = 0  # = 1 before 2024/09/05. Bug in scan pattern was fixed.
 saveImg = True
+
+
+hueRange = [0., 0.3]  # variance: 0~0.15 / std: 0~0.3
+octRangedB = [0, 50]  # set dynamic range of log OCT signal display
+if sys_ivs800:  octRangedB = [-10, 15]
 
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_IntImg.tif")])
@@ -50,10 +55,7 @@ elif rasterRepeat == 1:
 batchList = np.linspace(0, dim_y, int(dim_y/rasterRepeat), endpoint=False)
 varRgbImg = np.zeros((dim_y_raster, dim_z, dim_x, 3), 'uint8')
 batchProj_sat = np.ones((dim_z, dim_x), 'float32')
-hueRange = [0., 0.3]  # variance: 0~0.15 / std: 0~0.3
 
-octRangedB = [0, 50]  # set dynamic range of log OCT signal display
-if sys_ivs800:  octRangedB = [-10, 10]
 
 
 # dim_y_raster = 10
