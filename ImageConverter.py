@@ -35,8 +35,8 @@ def checkFile(path):
 
 
 sys_ivs800 = True
-rasterRepeat = 32
-multiFolderProcess = True  # if multiple data folders
+rasterRepeat = 1
+multiFolderProcess = False  # if multiple data folders
 
 save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
 save_tif = True  # Set as True if save intensity img as 3D stack .tiff file in the current folder
@@ -231,7 +231,7 @@ for FileId in range(FileNum):
 
         # # # - - - save LogIntImg as Tiff stack - - - # # #
         if save_view and rasterRepeat == 1:
-            octImgVol_linear = (np.clip((octImgVol_rol - octRangedB[0]) / (octRangedB[1] - octRangedB[0]), 0, 1) * 255).astype(dtype='uint8')
+            octImgView = (np.clip((octImgVol_rol - octRangedB[0]) / (octRangedB[1] - octRangedB[0]), 0, 1) * 255).astype(dtype='uint8')
             if gpu_proc: octImgView_sav = octImgView.get()
             else: octImgView_sav = octImgView
             tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + dataType + '_view.tif', octImgView_sav, append=True)
@@ -249,7 +249,8 @@ for FileId in range(FileNum):
         out.release();     cv2.destroyAllWindows()
 
 
-del rawDat, octImgVol_rol
+if 'rawDat' in globals(): del rawDat
+del octImgVol_rol
 del octImgVol
 file.close()
 gc.collect()
