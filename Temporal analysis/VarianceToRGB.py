@@ -55,7 +55,7 @@ elif rasterRepeat == 1:
 batchList = np.linspace(0, dim_y, int(dim_y/rasterRepeat), endpoint=False)
 varRgbImg = np.zeros((dim_y_raster, dim_z, dim_x, 3), 'uint8')
 batchProj_sat = np.ones((dim_z, dim_x), 'float32')
-
+varRawImg = np.zeros((dim_y_raster, dim_z, dim_x), 'float32')
 
 
 # dim_y_raster = 10
@@ -87,6 +87,7 @@ for batch_id in range(dim_y_raster):
         np.transpose([batchProj_varHue, batchProj_sat, batchProj_val]))  # [varProj_hue, varProj_sat/_val, varProj_val]
     varRgbImg[batch_id, :, :, :] = np.swapaxes(batchProj_rgb, 0, 1) * 255
 
+    varRawImg[batch_id, :, :] = batchProj_varNorm
     # # # - - - fresh progress bar display - - - # # #
     sys.stdout.write('\r')
     j = (batch_id + 1) / dim_y_raster
@@ -109,4 +110,5 @@ gc.collect()
 # # # - - - save image as tiff stack - - - # # #
 if saveImg:
     tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'VarImg.tif', varRgbImg)
+    tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'RawVar.tif', varRgbImg)
 
