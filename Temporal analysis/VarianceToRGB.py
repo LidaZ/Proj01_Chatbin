@@ -110,5 +110,5 @@ gc.collect()
 # # # - - - save image as tiff stack - - - # # #
 if saveImg:
     tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'VarImg.tif', varRgbImg)
-    tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'RawVar.tif', varRgbImg)
+    tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'RawVar.tif', varRawImg)
 
