@@ -17,6 +17,25 @@ from tkinter import filedialog
 matplotlib.use("Qt5Agg")
 
 
+"""
+Convert raw data (note: linear OCT intensity, not complex OCT signal) to log and linear intensity 3-D volumes.  
+
+How to use:
+Run > Select
+
+Parameters setting: 
+rasterRepeat = 1 when: 
+    time-lapse data (Storage_xxxx/xx/xx_xxhxxmxxs.dat)
+    3-D volume data (Data.bin, taken when rasterRepeat=1)   
+rasterRepeat = 32 when: 
+    Raster scan data (Data.bin, taken when rasterRepeat=32)
+    
+multiFolderProcess = False when:
+    process multiple 3-D volume or time-lapse data
+    not applicable for multiple raster data (maybe)
+"""
+
+
 def return_datatype(dataid):
     dtype = None
     if dataid[-4:] == '.dat':  dtype = 'timelapse'
@@ -35,7 +54,7 @@ def checkFile(path):
 
 
 sys_ivs800 = True
-rasterRepeat = 1
+rasterRepeat = 32
 multiFolderProcess = False  # if multiple data folders
 
 save_view = True  # Set as True if save dB-OCT img as 3D stack file for view

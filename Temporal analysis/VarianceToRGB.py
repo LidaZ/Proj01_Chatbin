@@ -19,6 +19,25 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Qt5Agg")
 
+"""
+Generate LIV-encoded images from a 3-D linear intensity volume. 
+Convertion is performed in HSV color space. 
+Hue: Normalized log intensity variance. 
+    where normalization is performed as log-intensity-variance divided by 
+    max-log-intensity (during a 32-frame sequence)
+Saturation: set as one
+Brightness: max-log-intensity
+
+How to use:
+Run > select a _IntImg.tif file 
+
+Para setting: 
+if using IVS-800 data: 
+    sys_ivs800 = True
+"""
+
+
+###
 
 # # # - - - [1],[2, 33多一帧], [34, 65], [66, 97], [98, 129]..., [3938, 3969], [3970, 4000少一帧]- - - # # #
 errorShiftFrame = 0  # = 1 before 2024/09/05. Bug in scan pattern was fixed.
