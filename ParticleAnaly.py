@@ -56,7 +56,7 @@ tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filed
 analyExcel = os.path.basename(stackFilePath)
 folderPath = os.path.dirname(stackFilePath);  tk.destroy()
 
-folderPath = r"J:\Data_2024\20240801_Jurkat02\lv-2hr\3d"
+# folderPath = r"J:\Data_2024\20240801_Jurkat02\lv-2hr\3d"
 # analyExcel = "Results" + ".csv"
 stackImg = "Data_3d_view" + ".tif"
 excelpath = folderPath + "\\" + analyExcel;  stackpath = folderPath + "\\" + stackImg
