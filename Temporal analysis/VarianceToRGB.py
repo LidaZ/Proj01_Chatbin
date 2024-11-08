@@ -58,8 +58,8 @@ else:  raise(ValueError('Select _IntImg.tif file'))
 print('Loading data folder: ' + root)
 fs = 50  # Hz, B-scan frequency during acquisition
 cutoff = 0.5;  order = 1  # (cutoff frequency = 0.5, filtering order = 2), lowpass filter to remove DC component before computing variance
-colormap = cm.rainbow
-norm = matplotlib.colors.Normalize(vmin=0, vmax=2, clip=True)
+# colormap = cm.rainbow
+# norm = matplotlib.colors.Normalize(vmin=0, vmax=2, clip=True)
 
 # # # - - - read size of tiff stack - - - # # #
 rawDat = tifffile.imread(stackFilePath)   # load linear intensity data from stack. Dimension (Y, Z, X)
