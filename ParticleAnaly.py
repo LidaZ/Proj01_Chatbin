@@ -99,7 +99,7 @@ plt.pause(0.01)
 # # # circularity histogram
 plt.subplot(1,3,3)#.cla()
 plt.hist(asp_ratio, facecolor=ptcolor, bins=45, range=[0, 5], alpha=0.35, density=True); plt.title('STD of diameter per cell');
-plt.xlabel('Aspect ratio (a.u.)'); plt.axis([1, 3, 0, 4])
+plt.xlabel('Aspect ratio (a.u.)'); plt.axis([0.1, 3, 0, 4])
 
 # plt.text(1, 2.2, 'Cell count number is ' + f"{total_cnt/spas:.2E}" + "/mL")
 print('Cell count density is: ' + f"{total_cnt/spas:.2E}" + "/mL")
