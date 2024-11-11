@@ -46,7 +46,7 @@ rasterRepeat = 32
 saveImg = True
 
 
-hueRange = [0., 0.3]  # variance: 0~0.15 / std: 0~0.3
+hueRange = [0., 3]  # variance: 0~0.3 / std: 0~0.3
 octRangedB = [0, 50]  # set dynamic range of log OCT signal display
 if sys_ivs800:  octRangedB = [-10, 15]
 
@@ -83,7 +83,7 @@ for batch_id in range(dim_y_raster):
     rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id+1)*rasterRepeat, :, :]  # [32(y), 300(z), 256(x)]
     # # # should be: rawDat[batch_id*rasterRepeat:(batch_id+1)*rasterRepeat, :, :], scan proc error
     # # # results in one additional frame at [0], and one frame lost at [4001]
-    rawDat_batch_dc = butter_lowpass_filter(rawDat_batch, cutoff, fs, order, 0)
+    # rawDat_batch_dc = butter_lowpass_filter(rawDat_batch, cutoff, fs, order, 0)
     # # # - - - disable DC component filter function for now - - - # # #
     rawDat_batch_filt = rawDat_batch # - rawDat_batch_dc        # linear signal int
 
@@ -95,7 +95,7 @@ for batch_id in range(dim_y_raster):
     # plt.figure(13); plt.clf(); plt.imshow(batchProj_val, cmap='gray')
 
     # # # - - - compute variance/std/freq at each pix - - - # # #
-    batchProj_var = np.var(rawDat_batch_log, axis=0)  # np.var() / np.std(); # log int = batchProj_valMax, linear int = rawDat_batch_filt
+    batchProj_var = np.multiply(10, np.var(rawDat_batch_log, axis=0))  # np.var() / np.std(); # log int = batchProj_valMax, linear int = rawDat_batch_filt
     batchProj_varNorm = np.divide(batchProj_var, (batchProj_val+1))
 
     batchProj_varHue = np.multiply(np.clip(
