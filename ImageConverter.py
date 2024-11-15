@@ -86,7 +86,7 @@ if gpu_proc:
     import cupy as np;  # from cupyx.scipy.ndimage import zoom # import nvTIFF (failed)
 octRangedB = [-10, 50]  # set dynamic range of log OCT signal display
 if sys_ivs800:
-    octRangedB = [-15, 15]
+    octRangedB = [-15, 20]
 [dim_y, dim_z, dim_x, FrameRate] = [0, 0, 0, 30];  # aspect_ratio = 1
 # # # - - - - fetch dir path of data file - - - - # # #
 if multiFolderProcess:
