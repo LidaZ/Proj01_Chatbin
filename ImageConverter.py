@@ -18,8 +18,9 @@ matplotlib.use("Qt5Agg")
 
 
 """
+Open source, no commercial purpose. 
 Convert raw data (note: linear OCT intensity, not complex OCT signal) to log and linear intensity 3-D volumes.  
-Author: Lida
+Author: Yijie, Lida
 
 How to use:
 Run > Select
