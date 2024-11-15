@@ -21,6 +21,7 @@ matplotlib.use("Qt5Agg")
 
 """
 Generate LIV-encoded images from a 3-D linear intensity volume. 
+Author: Lida
 Convertion is performed in HSV color space. 
 Hue: Normalized log intensity variance. 
     where normalization is performed as log-intensity-variance divided by 
