@@ -63,7 +63,7 @@ excelpath = folderPath + "\\" + analyExcel;  stackpath = folderPath + "\\" + sta
 # ### read stack size
 I = tifffile.imread(stackpath);  dim_y, dim_z, dim_x = I.shape;  del I;  gc.collect
 # spas = (dim_y*pix_sep/1000)*(dim_x*pix_sep/1000)*(dim_z*1.9/1000) / 1000 # 1000 mm^2 -> 1 mL
-spas = (dim_y*pix_sep/1000)*(dim_x*pix_sep/1000)*(200*1.9/1000) / 1000 * 1
+spas = (dim_y*pix_sep/1000)*(dim_x*pix_sep/1000)*(200*1.9/1000) / 1000
 ###
 df = pandas.read_csv(excelpath)
 if 'mv' in excelpath: ptcolor = 'green'

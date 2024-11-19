@@ -19,7 +19,7 @@ matplotlib.use("Qt5Agg")
 
 
 """
-Open source, no commercial purpose. 
+Open source, not for commercial use. 
 Convert raw data (note: linear OCT intensity, not complex OCT signal) to log and linear intensity 3-D volumes.  
 Author: Yijie, Lida
 
@@ -52,7 +52,7 @@ def close_window():
     patch.quit()
 
 def checkFile(path):
-    try: os.remove(path)
+    try: os.remove(path)  # Path.unlink(path)  #
     except OSError: pass
 
 
@@ -65,17 +65,19 @@ save_tif = True  # Set as True if save intensity img as 3D stack .tiff file in t
 
 save_video = False  # (Only for dtype='timelapse') set as True if save Int_view img as .mp4
 display_proc = False  # Set as True if monitor img during converting
-gpu_proc = True
+gpu_proc = False
 
 batch_initial_limit = 2.5  # GB, set the file size limit exceeding which enabling batch process
 proc_batch = 1
 
-
+###
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True);
-ifRaster = messagebox.askyesno(title=None, message='"Yes" if Raster volume; "No" if standard 3D data')
+ifRaster = messagebox.askyesno(title=None, message='"Yes" if Raster volume; "No" if standard 3D data. '
+                                                   '\n* \n Automatically ends after generating two .tif files')
 tk.destroy()
 if ifRaster: rasterRepeat = 32
 else: rasterRepeat = 1
+###
 
 
 # tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True);
@@ -112,14 +114,16 @@ else:
 
 for FileId in range(FileNum):
     DataFold = DataFold_list[FileId]
-    DataId = os.path.basename(DataFold);   root = os.path.dirname(DataFold)
+    # aDatPath = Path(DataFold)
+    DataId = os.path.basename(DataFold)  # str(aDatPath.name)  #
+    root = os.path.dirname(DataFold)  # str(aDatPath.parent)  #
     dataType = return_datatype(DataId)
 
     # # # - - - check if Tiff stack file exist - - - # # #
     checkFile(root + '\\' + DataId[:-4] + '_IntImg.tif')
     checkFile(root + '\\' + DataId[:-4] + '_3d_view.tif')
-    sys.stdout.write('\n')
-    sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': '+str(FileId+1)+'/'+str(FileNum))
+    # sys.stdout.write('\n')
+    # sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': '+str(FileId+1)+'/'+str(FileNum))
 
     # # # - - - initialize data parameters from config/header, enable memory mapping - - - # # #
     if dataType is not None:
@@ -230,18 +234,18 @@ for FileId in range(FileNum):
 
             # # # - - - print progress bar - - - # # #
             total_ind = index + batch_id * dim_y_batch
-            sys.stdout.write('\r')
+            # sys.stdout.write('\r')
             j = (total_ind + 1) / dim_y
-            sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing' + ': '+str(FileId+1)+'/'+str(FileNum))
-            sys.stdout.flush()
+            # sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing' + ': '+str(FileId+1)+'/'+str(FileNum))
+            # sys.stdout.flush()
             time.sleep(0.01)
         # # # - - - check if vol exists when datatype is '3D' - - - # # #
         try:  vol
         except NameError:  vol = None
         else:  del vol
         # # # - - - save LinearIntImg as Tiff stack - - - # # #
-        sys.stdout.write('\r')
-        sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' saving stack images' + ': '+str(FileId+1)+'/'+str(FileNum))
+        # sys.stdout.write('\r')
+        # sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' saving stack images' + ': '+str(FileId+1)+'/'+str(FileNum))
         time.sleep(0.01)
         octImgVol_rol = np.rollaxis(octImgVol[:, :, :], 0, 1)
         if save_tif:

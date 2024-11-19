@@ -8,19 +8,20 @@ from tqdm.auto import tqdm
 # import pandas as pd
 # from scipy.stats import norm
 # from scipy.optimize import curve_fit
-from lowpass_filter import butter_lowpass_filter
-from MapVarToRGB import num_to_rgb
+# from lowpass_filter import butter_lowpass_filter
+# from MapVarToRGB import num_to_rgb
 from matplotlib.colors import hsv_to_rgb
 import tifffile
 import os
 from tkinter import *
 from tkinter import filedialog
+from tkinter import messagebox
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Qt5Agg")
 
 """
-Open source, no commercial purpose. 
+Open source, not for commercial use. 
 Generate LIV-encoded images from a 3-D linear intensity volume. 
 Author: Yijie, Lida
 Convertion is performed in HSV color space. 
@@ -50,7 +51,7 @@ saveImg = True
 
 hueRange = [0., 3]  # variance: 0~0.3 / std: 0~0.3
 octRangedB = [0, 50]  # set dynamic range of log OCT signal display
-if sys_ivs800:  octRangedB = [-15, 20]
+if sys_ivs800:  octRangedB = [-15, 25]
 
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_IntImg.tif")])
@@ -58,8 +59,8 @@ DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath
 if '_IntImg' in DataId:  pass
 else:  raise(ValueError('Select _IntImg.tif file'))
 print('Loading data folder: ' + root)
-fs = 50  # Hz, B-scan frequency during acquisition
-cutoff = 0.5;  order = 1  # (cutoff frequency = 0.5, filtering order = 2), lowpass filter to remove DC component before computing variance
+# fs = 50  # Hz, B-scan frequency during acquisition
+# cutoff = 0.5;  order = 1  # (cutoff frequency = 0.5, filtering order = 2), lowpass filter to remove DC component before computing variance
 # colormap = cm.rainbow
 # norm = matplotlib.colors.Normalize(vmin=0, vmax=2, clip=True)
 
@@ -98,7 +99,7 @@ for batch_id in range(dim_y_raster):
 
     # # # - - - compute variance/std/freq at each pix - - - # # #
     batchProj_var = np.multiply(10, np.var(rawDat_batch_log, axis=0))  # np.var() / np.std(); # log int = batchProj_valMax, linear int = rawDat_batch_filt
-    batchProj_varNorm = np.divide(batchProj_var, (np.multiply(10, batchProj_valMax)))  # batchProj_varNorm = np.divide(batchProj_var, (batchProj_val+1))
+    batchProj_varNorm = np.divide(batchProj_var, (batchProj_val+1))
 
     batchProj_varHue = np.multiply(np.clip(
         (batchProj_varNorm-hueRange[0]) / (hueRange[1]-hueRange[0]), 0, 1), 0.6)  # limit color display range from red to blue
@@ -110,15 +111,15 @@ for batch_id in range(dim_y_raster):
 
     varRawImg[batch_id, :, :] = batchProj_varNorm
     # # # - - - fresh progress bar display - - - # # #
-    sys.stdout.write('\r')
+    # sys.stdout.write('\r')
     j = (batch_id + 1) / dim_y_raster
-    sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing')
+    # sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing')
 
-    figsize_mag = 3
-    plt.figure(16, figsize=(figsize_mag, dim_z/dim_x*figsize_mag));  plt.clf()
-    plt.imshow(np.swapaxes(batchProj_rgb, 0, 1), vmin=0, vmax=1)
-    plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-    plt.pause(0.01)
+    # figsize_mag = 3
+    # plt.figure(16, figsize=(figsize_mag, dim_z/dim_x*figsize_mag));  plt.clf()
+    # plt.imshow(np.swapaxes(batchProj_rgb, 0, 1), vmin=0, vmax=1)
+    # plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    # plt.pause(0.01)
 
     # # # - - - check int fluctuation profile at designated pixel - - - # # #
     # pix_loc = [250, 60]  # [Y_index, X_index]
@@ -131,5 +132,5 @@ gc.collect()
 # # # - - - save image as tiff stack - - - # # #
 if saveImg:
     tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'VarImg.tif', varRgbImg)
-    tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'RawVar.tif', varRawImg)
+    # tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'RawVar.tif', varRawImg)
 
