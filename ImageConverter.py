@@ -72,7 +72,7 @@ proc_batch = 1
 
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True);
-ifRaster = messagebox.askyesno(title=None, message='"Yes" if Raster volume; "No" if standard 3D data')
+ifRaster = messagebox.askyesno(title=None, message='"Yes" if Raster volume; "No" if standard 2D/3D data')
 tk.destroy()
 if ifRaster: rasterRepeat = 32
 else: rasterRepeat = 1
@@ -86,8 +86,7 @@ else: rasterRepeat = 1
 if gpu_proc:
     import cupy as np;  # from cupyx.scipy.ndimage import zoom # import nvTIFF (failed)
 octRangedB = [-10, 50]  # set dynamic range of log OCT signal display
-if sys_ivs800:
-    octRangedB = [-20, 25]
+if sys_ivs800:  octRangedB = [-20, 25]
 [dim_y, dim_z, dim_x, FrameRate] = [0, 0, 0, 30];  # aspect_ratio = 1
 # # # - - - - fetch dir path of data file - - - - # # #
 if multiFolderProcess:
