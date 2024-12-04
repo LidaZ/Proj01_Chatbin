@@ -1,6 +1,8 @@
 # import pyDeepP2SA as p2sa
 import numpy as np
 import matplotlib.pyplot as plt
+import PIL.Image
+import imageio
 import tifffile
 import gc
 import imagej
@@ -9,6 +11,7 @@ import pandas
 import os
 from tkinter import *
 from tkinter import filedialog
+from cellpose import utils, denoise, io
 import matplotlib
 matplotlib.use("Qt5Agg")
 
@@ -82,41 +85,72 @@ matplotlib.use("Qt5Agg")
 # # https://github.com/imagej/pyimagej/issues/126
 # # https://github.com/imagej/i2k-2022-pyimagej/blob/9e23cce2d0c5260dfe0bdeb7e98bcd27608f87df/I2K-2022-PyImageJ-Workshop.ipynb
 scyjava.config.add_option('-Xmx6g')
-root = r"C:\Users\lzhu\Desktop\OCT Data\Bayer\ProductY_20M"
-DataId = "ProductY_20Mposition3_After_Mixing_timelapse_view.tif"
+root = r"C:\Users\lzhu\Desktop\OCT Data\IVS2000_10umBeads_RiMatch"
+DataId = "Data_3d_view_crop.tif"
 DataFold = root + '\\' + DataId
 
 ij = imagej.init('sc.fiji:fiji:2.16.0', add_legacy=True)  # sc.fiji:fiji:2.16.0
 image = ij.io().open(DataFold)
 y_num = np.shape(image)[2]
+gifImg = []
 # # _ = ij.py.from_java(image); ndImg = _.values  # convert imageJ2 dataset class to python xarray (the opposite is py.to_java()); then to numpy array
-total_cnt = [0];  plt.figure(11); plt.clf(); #  plt.axis([0, y_num, 0, 1000])
-for ind_y in range(y_num):
+total_cnt = [0];  fig = plt.figure(11); plt.clf(); #  plt.axis([0, y_num, 0, 1000])
+for ind_y in range(1):  # y_num
     miteimp = ij.py.to_imageplus(image[:, :, ind_y])
     # ij.py.sync_image(miteimp);  ij.py.show(miteimp, cmap='gray')
     # # # propagate the updated pixel values to numpy array (cause ij.py.show() is calling pyplot)
 
-    # # # run plugin "Gaussian blur"
-    ij.py.run_plugin("Gaussian Blur...", args={"sigma": 1.0, "stack": True}, imp=miteimp)
+    # # # # run plugin "Gaussian blur"
+    # gaussBlur = 1.5
+    # ij.py.run_plugin("Gaussian Blur...", args={"sigma": gaussBlur, "stack": True}, imp=miteimp)
     # ij.py.sync_image(miteimp);  ij.py.show(miteimp, cmap='gray')
 
-    # # # apply threshold
-    imp = ij.py.to_imageplus(miteimp)
-    ij.IJ.setRawThreshold(imp, 75, 255)
-    # ij.IJ.run(imp, "Convert to Mask", "background=Dark black")  # Not necessary, only for monitoring
-    # ij.py.sync_image(imp);  ij.py.show(imp, cmap='gray')
+    # # # # apply threshold
+    # intThreshold = 135
+    # imp = ij.py.to_imageplus(miteimp)
+    # ij.IJ.setRawThreshold(imp, intThreshold, 255)  # better to make it auto-thresholding
+    # # ij.IJ.run(imp, "Convert to Mask", "background=Dark black")  # Not necessary, only for monitoring
+    # # ij.py.sync_image(imp);  ij.py.show(imp, cmap='gray')
 
-    # # # run plugin "Object count"
-    ij.IJ.run(imp, "Analyze Particles...", "size=5-50 pixel circularity=0.20-1.00 exclude summarize")
+    # # # # run plugin "Object count"
+    # ij.IJ.run(imp, "Analyze Particles...", "size=10-200 pixel circularity=0.00-1.00 exclude summarize")
+    #
+    # results = ij.ResultsTable.getResultsTable()   # command to deal with Result Table: https://imagej.net/ij/developer/api/ij/ij/measure/ResultsTable.html
+    # total_cnt = results.size()
+    # mean_cnt = total_cnt / (ind_y + 1)
+    #
+    # plt.figure(11); plt.scatter(ind_y, mean_cnt, color='black')
+    # plt.xlim(0, y_num);  plt.pause(0.01);  print(ind_y)
+    # fig.savefig(r"C:\Users\lzhu\Desktop\tmp.png")
+    # im = imageio.v2.imread(r"C:\Users\lzhu\Desktop\tmp.png")
+    # gifImg.append(im)
 
-    results = ij.ResultsTable.getResultsTable()   # command to deal with Result Table: https://imagej.net/ij/developer/api/ij/ij/measure/ResultsTable.html
-    total_cnt = results.size()
-    mean_cnt = total_cnt / (ind_y + 1)
 
-    plt.figure(11); plt.scatter(ind_y, mean_cnt, color='black')
-    plt.xlim(0, y_num);  plt.pause(0.01);  print(ind_y)
+# # # # # close instance
+# ij.dispose()  # legacy layer only activated once when initializing imagej, will be inactive when being called again
+# # # # # https://forum.image.sc/t/pyimagej-macro-run-error/68515
+# imageio.mimsave(r"C:\Users\lzhu\Desktop\animated_plot.gif", gifImg, format='Gif', fps=30, loop=0)
 
-# # # # close instance
-ij.dispose()  # legacy layer only activated once when initializing imagej, will be inactive when being called again
-# # # # https://forum.image.sc/t/pyimagej-macro-run-error/68515
 
+# # # # # test cellpose v3
+
+io.logger_setup()
+for index in range(10):  # y_num
+    img = ij.py.from_java(image[:, :, index])
+    plt.figure(11);  plt.clf()
+    plt.subplot(2,1,1); plt.imshow(img, cmap='gray')
+
+    # # # speckle  denoising
+    model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
+    masks, flows, styles, imgs_dn = model.eval(img, diameter=None, channels=[0,0])
+    plt.subplot(2,1,2);  plt.imshow(imgs_dn, cmap='gray')
+
+    # # # # segmentation, model may need re-train for segmentation, since the model was trained by resized images where mean diameter = 30 pix,
+    # # # # One can resize the images so that "10 um = 30 pix", but in cell count OCT it may be risky to resize 3X due to too low resolution.
+    # outlines = utils.outlines_list(masks)
+    # for o in outlines:
+    #     plt.plot(o[:, 0], o[:, 1], color=[1, 1, 0])
+
+    plt.pause(0.05)
+
+print('Done')
