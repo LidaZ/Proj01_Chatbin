@@ -92,21 +92,41 @@ DataFold = root + '\\' + DataId
 ij = imagej.init('sc.fiji:fiji:2.16.0', add_legacy=True)  # sc.fiji:fiji:2.16.0
 image = ij.io().open(DataFold)
 y_num = np.shape(image)[2]
-gifImg = []
+
 # # _ = ij.py.from_java(image); ndImg = _.values  # convert imageJ2 dataset class to python xarray (the opposite is py.to_java()); then to numpy array
-total_cnt = [0];  fig = plt.figure(11); plt.clf(); #  plt.axis([0, y_num, 0, 1000])
-for ind_y in range(1):  # y_num
-    miteimp = ij.py.to_imageplus(image[:, :, ind_y])
+total_cnt = [0];  gifImg = [];  areaFraction_list = [0]
+# fig = plt.figure(11); plt.clf(); #  plt.axis([0, y_num, 0, 1000])
+io.logger_setup()  # GPU没启动啊 怪不得这么慢 / 现在pytorch gpu刚装好了
+
+for ind_y in range(10):  # y_num
+    miteimp = ij.py.to_imageplus(image[:, :, ind_y])  # convert python xarray to imageJ2 dataset
+    img = ij.py.from_java(image[:, :, ind_y])
     # ij.py.sync_image(miteimp);  ij.py.show(miteimp, cmap='gray')
     # # # propagate the updated pixel values to numpy array (cause ij.py.show() is calling pyplot)
 
-    # # # # run plugin "Gaussian blur"
+    # # # # run plugin "Gaussian blur".
+    # # # # Update: no longer needed after implementing Cellpose v3, since there is already Gaussian blurring applied.
     # gaussBlur = 1.5
     # ij.py.run_plugin("Gaussian Blur...", args={"sigma": gaussBlur, "stack": True}, imp=miteimp)
     # ij.py.sync_image(miteimp);  ij.py.show(miteimp, cmap='gray')
 
+    # # # apply Cellpose v3 for denoising
+    model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
+    masks, flows, styles, imgs_dn = model.eval(img, diameter=5, channels=[0, 0], niter=2000)  #
+    # # # imgs_dn is the normalized denoised image; diameter=5 seems better than 0/None and dia=7
+    plt.figure(12); plt.clf();  plt.imshow(imgs_dn, cmap='gray')
+    # # # segmentation, model may need re-train for segmentation, since the model was trained by resized images where mean diameter = 30 pix,
+    # # # One can resize the images so that "10 um = 30 pix", but in cell count OCT it may be risky to resize 3X due to too low resolution.
+    outlines = utils.outlines_list(masks)
+    for o in outlines:
+        plt.plot(o[:, 0], o[:, 1], color=[1, 1, 0])
+
     # # # # apply threshold
-    # intThreshold = 135
+    intThreshold = 0.55  # 135
+    imgs_dnThresh = (imgs_dn > intThreshold) * imgs_dn
+    plt.figure(13);    plt.clf();    plt.imshow(imgs_dnThresh, cmap='gray')
+    areaFraction = np.count_nonzero(imgs_dnThresh) / np.size(imgs_dn)
+    areaFraction_list.append(areaFraction)
     # imp = ij.py.to_imageplus(miteimp)
     # ij.IJ.setRawThreshold(imp, intThreshold, 255)  # better to make it auto-thresholding
     # # ij.IJ.run(imp, "Convert to Mask", "background=Dark black")  # Not necessary, only for monitoring
@@ -131,26 +151,6 @@ for ind_y in range(1):  # y_num
 # # # # # https://forum.image.sc/t/pyimagej-macro-run-error/68515
 # imageio.mimsave(r"C:\Users\lzhu\Desktop\animated_plot.gif", gifImg, format='Gif', fps=30, loop=0)
 
-
-# # # # # test cellpose v3
-
-io.logger_setup()
-for index in range(10):  # y_num
-    img = ij.py.from_java(image[:, :, index])
-    plt.figure(11);  plt.clf()
-    plt.subplot(2,1,1); plt.imshow(img, cmap='gray')
-
-    # # # speckle  denoising
-    model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
-    masks, flows, styles, imgs_dn = model.eval(img, diameter=None, channels=[0,0])
-    plt.subplot(2,1,2);  plt.imshow(imgs_dn, cmap='gray')
-
-    # # # # segmentation, model may need re-train for segmentation, since the model was trained by resized images where mean diameter = 30 pix,
-    # # # # One can resize the images so that "10 um = 30 pix", but in cell count OCT it may be risky to resize 3X due to too low resolution.
-    # outlines = utils.outlines_list(masks)
-    # for o in outlines:
-    #     plt.plot(o[:, 0], o[:, 1], color=[1, 1, 0])
-
-    plt.pause(0.05)
+    plt.pause(0.01)
 
 print('Done')
