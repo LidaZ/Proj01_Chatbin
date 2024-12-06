@@ -10,8 +10,8 @@ import scyjava
 # import pandas
 import sys
 import os
-from tkinter import *
-from tkinter import filedialog
+# from tkinter import *
+# from tkinter import filedialog
 from cellpose import utils, denoise, io
 import matplotlib
 matplotlib.use("Qt5Agg")
@@ -96,17 +96,19 @@ rawData = np.transpose(tifffile.imread(DataFold), (2, 1, 0))
 y_num = np.shape(rawData)[0]
 
 # # _ = ij.py.from_java(image); ndImg = _.values  # convert imageJ2 dataset class to python xarray (the opposite is py.to_java()); then to numpy array
-total_cnt = [0];  gifImg = [];  areaFraction_list = [0]
+total_cnt = [0];  gifImg = [];  framList = [0];  areaFraction_list = [0]
 # fig_frac, ax_frac = plt.subplots(1, 1)  #  plt.axis([0, y_num, 0, 1000])
 fig, ax = plt.subplot_mosaic("AAD;BBD;CCD")
 fig.set_dpi(150)
 ax['A'].title.set_text('Before denoising'); ax['B'].title.set_text('After denoising'); ax['C'].title.set_text('Masking'); ax['D'].title.set_text('Mean area fraction')
 # io.logger_setup()
 model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
+intThreshold = 0.55  # 135
 
 for ind_y in range(y_num):  # y_num
     img = rawData[ind_y, :, :]
-    ax['A'].clear();  ax['A'].imshow(img, cmap='gray')
+    if ind_y == 0:  ax_a = ax['A'].imshow(img, cmap='gray')
+    else:  ax_a.set_data(img)
     # miteimp = ij.py.to_imageplus(image[:, :, ind_y])  # convert python xarray to imageJ2 dataset
     # img = ij.py.from_java(image[:, :, ind_y])
     # ij.py.sync_image(miteimp);  ij.py.show(miteimp, cmap='gray')
@@ -119,18 +121,19 @@ for ind_y in range(y_num):  # y_num
     # ij.py.sync_image(miteimp);  ij.py.show(miteimp, cmap='gray')
 
     # # # apply Cellpose v3 for denoising
-    masks, flows, styles, imgs_dn = model.eval(img, diameter=5, channels=[0, 0])#, niter=20000)  #
+    masks, flows, styles, imgs_dn = model.eval(img, diameter=None, channels=[0, 0]) #, niter=200000)  #
     # # # imgs_dn is the normalized denoised image; diameter=5 seems better than 0/None and dia=7 (not sure if this setting works)
-    ax['B'].imshow(imgs_dn, cmap='gray')
+    if ind_y == 0:  ax_b = ax['B'].imshow(imgs_dn, cmap='gray')
+    else:  ax_b.set_data(imgs_dn)
     # # # segmentation, model may need re-train for segmentation, since the model was trained by resized images where mean diameter = 30 pix,
     # # # One can resize the images so that "10 um = 30 pix", but in cell count OCT it may be risky to resize 3X due to resolution is already low.
-    outlines = utils.outlines_list(masks)
-    for o in outlines:  ax['A'].plot(o[:, 0], o[:, 1], color=[1, 1, 0])
+    # outlines = utils.outlines_list(masks)
+    # for o in outlines:  ax['A'].plot(o[:, 0], o[:, 1], color=[1, 1, 0])
 
     # # # # threshold to obtain area fraction from frame
-    intThreshold = 0.55  # 135
     imgs_dnThresh = (imgs_dn > intThreshold) * imgs_dn
-    ax['C'].imshow(imgs_dnThresh, cmap='gray')
+    if ind_y == 0:  ax_c = ax['C'].imshow(imgs_dnThresh, cmap='gray')
+    else:  ax_c.set_data(imgs_dnThresh)
     areaFraction = np.count_nonzero(imgs_dnThresh) / np.size(imgs_dn)
     areaFraction_list.append(areaFraction)
     meanAreaFraction = np.mean(areaFraction_list)
@@ -146,11 +149,11 @@ for ind_y in range(y_num):  # y_num
     # total_cnt = results.size()
     # mean_cnt = total_cnt / (ind_y + 1)
     #
-    ax['D'].scatter(ind_y, meanAreaFraction, color='black')
-    # plt.xlim(0, y_num);  plt.pause(0.01);  print(ind_y)
-    # fig.savefig(r"C:\Users\lzhu\Desktop\tmp.png")
-    # im = imageio.v2.imread(r"C:\Users\lzhu\Desktop\tmp.png")
-    # gifImg.append(im)
+    if ind_y%(y_num//100) == 0:  ax['D'].scatter(ind_y, meanAreaFraction, color='#6ea6db', marker='o', s=7)#, facecolors='none')
+    # # # plt.xlim(0, y_num);  plt.pause(0.01);  print(ind_y)
+    # # # fig.savefig(r"C:\Users\lzhu\Desktop\tmp.png")
+    # # # im = imageio.v2.imread(r"C:\Users\lzhu\Desktop\tmp.png")
+    # # # gifImg.append(im)
 
     sys.stdout.write('\r')
     j = (ind_y + 1) / y_num
@@ -164,4 +167,5 @@ for ind_y in range(y_num):  # y_num
 
 
 
-print('Done')
+print('Mean area fraction is: ', meanAreaFraction)
+# record of pixels per slice of a 10-um particle: 4+21+41+63+73+90+92(> mean diameter = 5.5 pix)+89+83+67+53+26+6 = 708 pixel / particle
