@@ -1,13 +1,14 @@
 # import pyDeepP2SA as p2sa
 import numpy as np
 import matplotlib.pyplot as plt
-import PIL.Image
-import imageio
+# import PIL.Image
+# import imageio
 import tifffile
 import gc
-import imagej
+# import imagej
 import scyjava
-import pandas
+# import pandas
+import sys
 import os
 from tkinter import *
 from tkinter import filedialog
@@ -89,18 +90,25 @@ root = r"C:\Users\lzhu\Desktop\OCT Data\IVS2000_10umBeads_RiMatch"
 DataId = "Data_3d_view_crop.tif"
 DataFold = root + '\\' + DataId
 
-ij = imagej.init('sc.fiji:fiji:2.16.0', add_legacy=True)  # sc.fiji:fiji:2.16.0
-image = ij.io().open(DataFold)
-y_num = np.shape(image)[2]
+# ij = imagej.init('sc.fiji:fiji:2.16.0', add_legacy=True)  # sc.fiji:fiji:2.16.0
+# rawData = ij.io().open(DataFold)
+rawData = np.transpose(tifffile.imread(DataFold), (2, 1, 0))
+y_num = np.shape(rawData)[0]
 
 # # _ = ij.py.from_java(image); ndImg = _.values  # convert imageJ2 dataset class to python xarray (the opposite is py.to_java()); then to numpy array
 total_cnt = [0];  gifImg = [];  areaFraction_list = [0]
-# fig = plt.figure(11); plt.clf(); #  plt.axis([0, y_num, 0, 1000])
-io.logger_setup()  # GPU没启动啊 怪不得这么慢 / 现在pytorch gpu刚装好了
+# fig_frac, ax_frac = plt.subplots(1, 1)  #  plt.axis([0, y_num, 0, 1000])
+fig, ax = plt.subplot_mosaic("AAD;BBD;CCD")
+fig.set_dpi(150)
+ax['A'].title.set_text('Before denoising'); ax['B'].title.set_text('After denoising'); ax['C'].title.set_text('Masking'); ax['D'].title.set_text('Mean area fraction')
+# io.logger_setup()
+model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
 
-for ind_y in range(10):  # y_num
-    miteimp = ij.py.to_imageplus(image[:, :, ind_y])  # convert python xarray to imageJ2 dataset
-    img = ij.py.from_java(image[:, :, ind_y])
+for ind_y in range(y_num):  # y_num
+    img = rawData[ind_y, :, :]
+    ax['A'].clear();  ax['A'].imshow(img, cmap='gray')
+    # miteimp = ij.py.to_imageplus(image[:, :, ind_y])  # convert python xarray to imageJ2 dataset
+    # img = ij.py.from_java(image[:, :, ind_y])
     # ij.py.sync_image(miteimp);  ij.py.show(miteimp, cmap='gray')
     # # # propagate the updated pixel values to numpy array (cause ij.py.show() is calling pyplot)
 
@@ -111,22 +119,21 @@ for ind_y in range(10):  # y_num
     # ij.py.sync_image(miteimp);  ij.py.show(miteimp, cmap='gray')
 
     # # # apply Cellpose v3 for denoising
-    model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
-    masks, flows, styles, imgs_dn = model.eval(img, diameter=5, channels=[0, 0], niter=2000)  #
-    # # # imgs_dn is the normalized denoised image; diameter=5 seems better than 0/None and dia=7
-    plt.figure(12); plt.clf();  plt.imshow(imgs_dn, cmap='gray')
+    masks, flows, styles, imgs_dn = model.eval(img, diameter=5, channels=[0, 0])#, niter=20000)  #
+    # # # imgs_dn is the normalized denoised image; diameter=5 seems better than 0/None and dia=7 (not sure if this setting works)
+    ax['B'].imshow(imgs_dn, cmap='gray')
     # # # segmentation, model may need re-train for segmentation, since the model was trained by resized images where mean diameter = 30 pix,
-    # # # One can resize the images so that "10 um = 30 pix", but in cell count OCT it may be risky to resize 3X due to too low resolution.
+    # # # One can resize the images so that "10 um = 30 pix", but in cell count OCT it may be risky to resize 3X due to resolution is already low.
     outlines = utils.outlines_list(masks)
-    for o in outlines:
-        plt.plot(o[:, 0], o[:, 1], color=[1, 1, 0])
+    for o in outlines:  ax['A'].plot(o[:, 0], o[:, 1], color=[1, 1, 0])
 
-    # # # # apply threshold
+    # # # # threshold to obtain area fraction from frame
     intThreshold = 0.55  # 135
     imgs_dnThresh = (imgs_dn > intThreshold) * imgs_dn
-    plt.figure(13);    plt.clf();    plt.imshow(imgs_dnThresh, cmap='gray')
+    ax['C'].imshow(imgs_dnThresh, cmap='gray')
     areaFraction = np.count_nonzero(imgs_dnThresh) / np.size(imgs_dn)
     areaFraction_list.append(areaFraction)
+    meanAreaFraction = np.mean(areaFraction_list)
     # imp = ij.py.to_imageplus(miteimp)
     # ij.IJ.setRawThreshold(imp, intThreshold, 255)  # better to make it auto-thresholding
     # # ij.IJ.run(imp, "Convert to Mask", "background=Dark black")  # Not necessary, only for monitoring
@@ -139,18 +146,22 @@ for ind_y in range(10):  # y_num
     # total_cnt = results.size()
     # mean_cnt = total_cnt / (ind_y + 1)
     #
-    # plt.figure(11); plt.scatter(ind_y, mean_cnt, color='black')
+    ax['D'].scatter(ind_y, meanAreaFraction, color='black')
     # plt.xlim(0, y_num);  plt.pause(0.01);  print(ind_y)
     # fig.savefig(r"C:\Users\lzhu\Desktop\tmp.png")
     # im = imageio.v2.imread(r"C:\Users\lzhu\Desktop\tmp.png")
     # gifImg.append(im)
 
+    sys.stdout.write('\r')
+    j = (ind_y + 1) / y_num
+    sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing')
+    plt.pause(0.01)
 
 # # # # # close instance
 # ij.dispose()  # legacy layer only activated once when initializing imagej, will be inactive when being called again
 # # # # # https://forum.image.sc/t/pyimagej-macro-run-error/68515
 # imageio.mimsave(r"C:\Users\lzhu\Desktop\animated_plot.gif", gifImg, format='Gif', fps=30, loop=0)
 
-    plt.pause(0.01)
+
 
 print('Done')
