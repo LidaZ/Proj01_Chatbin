@@ -104,7 +104,7 @@ ax['A'].title.set_text('Before denoising'); ax['B'].title.set_text('After denois
 # io.logger_setup()
 model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
 
-for ind_y in range(y_num):  # y_num
+for ind_y in range(1):  # y_num
     img = rawData[ind_y, :, :]
     ax['A'].clear();  ax['A'].imshow(img, cmap='gray')
     # miteimp = ij.py.to_imageplus(image[:, :, ind_y])  # convert python xarray to imageJ2 dataset
@@ -119,7 +119,7 @@ for ind_y in range(y_num):  # y_num
     # ij.py.sync_image(miteimp);  ij.py.show(miteimp, cmap='gray')
 
     # # # apply Cellpose v3 for denoising
-    masks, flows, styles, imgs_dn = model.eval(img, diameter=5, channels=[0, 0])#, niter=20000)  #
+    masks, flows, styles, imgs_dn = model.eval(img, diameter=None, channels=[0, 0]) #, niter=200000)  #
     # # # imgs_dn is the normalized denoised image; diameter=5 seems better than 0/None and dia=7 (not sure if this setting works)
     ax['B'].imshow(imgs_dn, cmap='gray')
     # # # segmentation, model may need re-train for segmentation, since the model was trained by resized images where mean diameter = 30 pix,
