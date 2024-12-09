@@ -105,7 +105,7 @@ ax['A'].title.set_text('Before denoising'); ax['B'].title.set_text('After denois
 model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
 intThreshold = 0.55  # 135
 
-for ind_y in range(y_num):  # y_num
+for ind_y in range(1):  # y_num
     img = rawData[ind_y, :, :]
     if ind_y == 0:  ax_a = ax['A'].imshow(img, cmap='gray')
     else:  ax_a.set_data(img)
