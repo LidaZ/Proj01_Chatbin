@@ -45,6 +45,7 @@ if using IVS-800 data:
 errorShiftFrame = 0  # = 1 before 2024/09/05. Bug in scan pattern was fixed.
 sys_ivs800 = True
 rasterRepeat = 32
+computeRasterRepeat = 32
 saveImg = True
 
 
@@ -82,7 +83,7 @@ varRawImg = np.zeros((dim_y_raster, dim_z, dim_x), 'float32')
 # dim_y_raster = 1
 for batch_id in range(dim_y_raster):
     # # # - - - filt dc component, extract fluctuation with f>0.5hz when fs=50hz - - - # # #
-    rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id+1)*rasterRepeat, :, :]  # [32(y), 300(z), 256(x)]
+    rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id*rasterRepeat+errorShiftFrame+computeRasterRepeat), :, :]  # [32(y), 300(z), 256(x)]
     # rawDat_batch_dc = butter_lowpass_filter(rawDat_batch, cutoff, fs, order, 0)
     # # # - - - disable DC component filter function for now - - - # # #
     rawDat_batch_filt = rawDat_batch  # - rawDat_batch_dc        # linear intensity

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import tifffile
 import gc
 # import imagej
+# import time
 import scyjava
 # import pandas
 import sys
@@ -105,6 +106,7 @@ ax['A'].title.set_text('Before denoising'); ax['B'].title.set_text('After denois
 model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
 intThreshold = 0.55  # 135
 
+# start = time.time()
 for ind_y in range(y_num):  # y_num
     img = rawData[ind_y, :, :]
     if ind_y == 0:  ax_a = ax['A'].imshow(img, cmap='gray')
@@ -164,8 +166,7 @@ for ind_y in range(y_num):  # y_num
 # ij.dispose()  # legacy layer only activated once when initializing imagej, will be inactive when being called again
 # # # # # https://forum.image.sc/t/pyimagej-macro-run-error/68515
 # imageio.mimsave(r"C:\Users\lzhu\Desktop\animated_plot.gif", gifImg, format='Gif', fps=30, loop=0)
-
-
+# end = time.time(); print(end - start)
 
 print('Mean area fraction is: ', meanAreaFraction)
 # record of pixels per slice of a 10-um particle: 4+21+41+63+73+90+92(> mean diameter = 5.5 pix)+89+83+67+53+26+6 = 708 pixel / particle
