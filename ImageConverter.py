@@ -56,8 +56,8 @@ def checkFile(path):
     except OSError: pass
 
 
-sys_ivs800 = True
-rasterRepeat = 32
+sys_ivs800 = False
+Raster_Repeat_num = 16
 multiFolderProcess = False  # if multiple data folders
 
 save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
@@ -72,9 +72,9 @@ proc_batch = 1
 
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True);
-ifRaster = messagebox.askyesno(title=None, message='"Yes" if Raster volume; "No" if standard 2D/3D data')
+ifRaster = messagebox.askyesno(title=None, message='"Yes" if Raster volume; "No" if standard 2D/3D data', parent=tk)
 tk.destroy()
-if ifRaster: rasterRepeat = 32
+if ifRaster: rasterRepeat = Raster_Repeat_num
 else: rasterRepeat = 1
 
 

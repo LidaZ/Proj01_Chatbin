@@ -43,9 +43,9 @@ if using IVS-800 data:
 
 # # # - - - [1],[2, 33多一帧], [34, 65], [66, 97], [98, 129]..., [3938, 3969], [3970, 4000少一帧]- - - # # #
 errorShiftFrame = 0  # = 1 before 2024/09/05. Bug in scan pattern was fixed.
-sys_ivs800 = True
-rasterRepeat = 32
-computeRasterRepeat = 32
+sys_ivs800 = False
+rasterRepeat = 16
+computeRasterRepeat = 16
 saveImg = True
 
 
