@@ -107,7 +107,7 @@ model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type=
 intThreshold = 0.55  # 135
 imgs_dn = [[0], [0]]
 # start = time.time()
-for ind_y in range(1):  # y_num
+for ind_y in range(y_num):  # y_num
     img = rawData[:, :, ind_y]
     try:  ax_a.set_data(img)
     except NameError:  ax_a = ax['A'].imshow(img, cmap='gray')
