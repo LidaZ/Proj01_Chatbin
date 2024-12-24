@@ -109,10 +109,8 @@ imgs_dn = [[0], [0]]
 # start = time.time()
 for ind_y in range(1):  # y_num
     img = rawData[:, :, ind_y]
-    if ind_y == 0:  ax_a = ax['A'].imshow(img, cmap='gray')
-    else:
-        try:  ax_a.set_data(img)
-        except NameError:  ax_a = ax['A'].imshow(img, cmap='gray')
+    try:  ax_a.set_data(img)
+    except NameError:  ax_a = ax['A'].imshow(img, cmap='gray')
     # miteimp = ij.py.to_imageplus(image[:, :, ind_y])  # convert python xarray to imageJ2 dataset
     # img = ij.py.from_java(image[:, :, ind_y])
     # ij.py.sync_image(miteimp);  ij.py.show(miteimp, cmap='gray')
@@ -129,10 +127,8 @@ for ind_y in range(1):  # y_num
         masks, flows, styles, imgs_dn = model.eval(img, diameter=None, channels=[0, 0]) #, niter=200000)
 
         # # # imgs_dn is the normalized denoised image; diameter=5 seems better than 0/None and dia=7 (not sure if this setting works)
-        if ind_y == 0:  ax_b = ax['B'].imshow(imgs_dn, cmap='gray')
-        else:
-            try:  ax_b.set_data(imgs_dn)
-            except NameError:  ax_b = ax['B'].imshow(imgs_dn, cmap='gray')
+        try:  ax_b.set_data(imgs_dn)
+        except NameError:  ax_b = ax['B'].imshow(imgs_dn, cmap='gray')
         # # # segmentation, model may need re-train for segmentation, since the model was trained by resized images where mean diameter = 30 pix,
         # # # One can resize the images so that "10 um = 30 pix", but in cell count OCT it may be risky to resize 3X due to resolution is already low.
         # outlines = utils.outlines_list(masks)
@@ -140,10 +136,8 @@ for ind_y in range(1):  # y_num
 
         # # # # threshold to obtain area fraction from frame
         imgs_dnThresh = (imgs_dn > intThreshold) * imgs_dn
-        if ind_y == 0:  ax_c = ax['C'].imshow(imgs_dnThresh, cmap='gray')
-        else:
-            try:  ax_c.set_data(imgs_dnThresh)
-            except NameError:  ax_c = ax['C'].imshow(imgs_dnThresh, cmap='gray')
+        try:  ax_c.set_data(imgs_dnThresh)
+        except NameError:  ax_c = ax['C'].imshow(imgs_dnThresh, cmap='gray')
         areaFraction = np.count_nonzero(imgs_dnThresh) / np.size(imgs_dn)
         areaFraction_list.append(areaFraction)
         meanAreaFraction = np.mean(areaFraction_list)
@@ -180,4 +174,3 @@ for ind_y in range(1):  # y_num
 
 print('Mean area fraction is: ', meanAreaFraction)
 # record of pixels per slice of a 10-um particle: 4+21+41+63+73+90+92(> mean diameter = 5.5 pix)+89+83+67+53+26+6 = 708 pixel / particle
-# 加一个根据Bscan尺寸自动算fraction的功能，不然每个Data的选择区域还不一样
