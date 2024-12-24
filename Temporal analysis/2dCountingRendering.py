@@ -29,12 +29,12 @@ CellVol = 708.4  # calculated by manually picking 10 isolated particle images fr
 initialDensity = 24.7 * 1e6  # count/mL, assumed particle density before dilution
 
 # # # # make scatter plot of counting vs density, 4 velocities correspond to 4 colors# # # # # # # #
-fraction_density02a = np.array([0.236, 0.2376, 0.2338, 0.2247])  # for flow: 0.1, 0.2, 0.4, 0.8
+fraction_density02a = np.array([0.236, 0.2376, 0.2338, 0.2247])  # for label: 0.1, 0.2, 0.4, 0.6
 fraction_density010a = np.array([0.1084, 0.1046, 0.0986, 0.0936])
 fraction_density0049a = np.array([0.048, 0.0499, 0.0491, 0.0485])
 fraction_density0027a = np.array([0.0286, 0.0281, 0.0284, 0.02833])
-flow = [0.1, 0.2, 0.4, 0.6]
-density = np.array([0.2, 0.10, 0.049, 0.027]);  actualDensity = initialDensity * density
+# flow = [0.1, 0.2, 0.4, 0.6]
+density = np.array([0.2, 0.095, 0.049, 0.027]);  actualDensity = initialDensity * density
 actualDen = np.tile(actualDensity, (4, 1))
 CaptureVol = x_num * y_num * z_num
 CaptureVolSize = x_num*4 * y_num*4 * (z_num*5.29 / RI) / 1e12  # um^3 > mL, Z: 5.29 um/pix, X & Y: 4 um/pix
