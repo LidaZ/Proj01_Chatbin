@@ -4,15 +4,18 @@ Proj01_Chatbin
 Code repository for project 01 cell count OCT.
 
 ## Asset list:
-### ImageConverte_verx.py: 
-- Code to convert raw data (amplitude of OCT signal after Fourier transform, both from IVS-200-HR and IVS-800) to .tif image stacks. 
+### ImageConversion 
+- Used code: ImageConverter.py
+- Convert raw data (logarithmic amplitude of OCT signal after Fourier transform, both from IVS-200-HR and IVS-800) to .tif image stacks. 
 
->Note: Code name will be changed as "ImageConverter_ver2.0.py" after adding function to convert raw spectrum data to image stacks.  
+>Note: Code will be upgraded after adding function to convert raw spectrum data to image stacks.  
 
-### VarianceToRGB.py
+### Temporal analysis
+- Used code: VarianceToRGB.py
 - Code to generate LIV_encoded image and raw LIV data from the linear intensity image stacks. 
->Note: The display range is set to [0, 1], but await to be further optimized based on the cellular apoptosis imaging results. 
+>Note: The display range of the normalized LIV (hue channel of hsv color space) is set to [0, 1], but await to be further optimized based on the cellular apoptosis imaging results. 
 
-### PartivleAnaly.py: 
-- Code to make plot from the result of "particle analysis" built-in function of Fiji.
+### 2D Counting 
+- Used code: PartivleAnaly.py; 2dCountingRendering.py: 
+- Code to estimate the counting of homogeneously distributed particles using a sequence of B-scans, by computing the area fraction from the 2D images (see Dellese principle for more details); convert the computed 2D area fraction into 3D counting, and make plot which was designed for standard particles validation. 
 
