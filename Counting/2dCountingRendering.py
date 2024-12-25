@@ -40,9 +40,13 @@ CaptureVol = x_num * y_num * z_num
 CaptureVolSize = x_num*4 * y_num*4 * (z_num*5.29 / RI) / 1e12  # um^3 > mL, Z: 5.29 um/pix, X & Y: 4 um/pix
 
 count_0027a = densityRender(CaptureVol, CellVol, CaptureVolSize, fraction_density0027a)
+# count_0027a_3d = np.array([717, 1395, 2364, 2646]) / CaptureVolSize
 count_0049a = densityRender(CaptureVol, CellVol, CaptureVolSize, fraction_density0049a)
+# count_0049a_3d = np.array([1178, 2141, 3366, 3184]) / CaptureVolSize
 count_010a = densityRender(CaptureVol, CellVol, CaptureVolSize, fraction_density010a)
+# count_010a_3d = np.array([1816, 2844, 3718, 3770]) / CaptureVolSize
 count_02a = densityRender(CaptureVol, CellVol, CaptureVolSize, fraction_density02a)
+# count_02a_3d = np.array([1525, 2606, 3594, 3337]) / CaptureVolSize
 
 fig2 = plt.figure(21);  plt.clf()
 ax2 = fig2.subplot_mosaic("A")
