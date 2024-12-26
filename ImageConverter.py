@@ -19,7 +19,7 @@ matplotlib.use("Qt5Agg")
 
 
 """
-Open source, no commercial purpose. 
+Open source project for cell counting system. 
 Convert raw data (note: linear OCT intensity, not complex OCT signal) to log and linear intensity 3-D volumes.  
 Author: Yijie, Lida
 

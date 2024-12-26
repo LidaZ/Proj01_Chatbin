@@ -1,15 +1,15 @@
-import os
+# import os
 import sys
 import numpy as np
-from numpy import fft
+# from numpy import fft
 import gc
-import matplotlib.cm as cm
+# import matplotlib.cm as cm
 # from tqdm.auto import tqdm
 # import pandas as pd
 # from scipy.stats import norm
 # from scipy.optimize import curve_fit
-from lowpass_filter import butter_lowpass_filter
-from MapVarToRGB import num_to_rgb
+# from lowpass_filter import butter_lowpass_filter
+# from MapVarToRGB import num_to_rgb
 from matplotlib.colors import hsv_to_rgb
 import tifffile
 import os
@@ -20,7 +20,7 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 
 """
-Open source, no commercial purpose. 
+Open source project for cell counting system. 
 Generate LIV-encoded images from a 3-D linear intensity volume. 
 Author: Yijie, Lida
 Convertion is performed in HSV color space. 
@@ -43,9 +43,9 @@ if using IVS-800 data:
 
 # # # - - - [1],[2, 33多一帧], [34, 65], [66, 97], [98, 129]..., [3938, 3969], [3970, 4000少一帧]- - - # # #
 errorShiftFrame = 0  # = 1 before 2024/09/05. Bug in scan pattern was fixed.
-sys_ivs800 = False
-rasterRepeat = 16
-computeRasterRepeat = 16
+sys_ivs800 = True
+rasterRepeat = 32
+computeRasterRepeat = 32
 saveImg = True
 
 
