@@ -56,8 +56,8 @@ def checkFile(path):
     except OSError: pass
 
 
-sys_ivs800 = False
-Raster_Repeat_num = 16
+sys_ivs800 = True
+Raster_Repeat_num = 32
 multiFolderProcess = False  # if multiple data folders
 
 save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
@@ -86,7 +86,7 @@ else: rasterRepeat = 1
 if gpu_proc:
     import cupy as np;  # from cupyx.scipy.ndimage import zoom # import nvTIFF (failed)
 octRangedB = [-10, 50]  # set dynamic range of log OCT signal display
-if sys_ivs800:  octRangedB = [-20, 25]
+if sys_ivs800:  octRangedB = [-5, 25]
 [dim_y, dim_z, dim_x, FrameRate] = [0, 0, 0, 30];  # aspect_ratio = 1
 # # # - - - - fetch dir path of data file - - - - # # #
 if multiFolderProcess:
@@ -204,7 +204,10 @@ for FileId in range(FileNum):
             # # # *extract the 1st image of each repeat raster and save into raster_LogIntView tiffFile # # #
             if save_view or save_tif:
                 if rasterRepeat > 1 and (batch_id*dim_y_batch+index)%rasterRepeat == 0:
-                    octImgVol_raster[int((batch_id*dim_y_batch+index)/rasterRepeat), :, :] = res_octImg
+                    rasterProjInd = int((batch_id*dim_y_batch+index)/rasterRepeat)
+                    # octImgVol_raster[rasterProjInd, :, :] = res_octImg  # use first frame of each raster peroid as the log intensity image
+                    octImgVol_raster[rasterProjInd, :, :] \
+                        = np.max(vol[index:(index+Raster_Repeat_num), :, :].T, 2)  # use max projection of each raster period for log intensity image
             # # # - - - get linear intensity signal into cupy array - - - # # #
             octImgVol[index, :, :] = octImg
             # # # saving octImg instead of res_octImg, to avoid X-interpolation on

@@ -17,7 +17,7 @@ import os
 from tkinter import *
 from tkinter import filedialog
 import matplotlib.pyplot as plt
-from mpl_point_clicker import clicker
+# from mpl_point_clicker import clicker
 from matplotlib.backend_bases import MouseButton
 import matplotlib.patches as patches
 # import matplotlib
@@ -44,7 +44,7 @@ def on_press(event):
         try:
             start_point = (int(event.xdata), int(event.ydata))
         except TypeError:
-            raise ValueError('Select in the frame')
+            raise ValueError('Select within the frame')
         # print(f'start {int(event.xdata)} {int(event.ydata)}')
         rect = patches.Rectangle((start_point[0], start_point[1]), 0, 0,
                                  linewidth=1, edgecolor='y', facecolor='none')
@@ -78,8 +78,30 @@ def on_release(event):
         selectNotDone = False
         return rectangle_coords
 
+def findOverlapRect(firstFrameCord, lastFrameCord):
+    # firstFrameCord, lastFrameCord = (x, y)
+    LeftUp = (max(firstFrameCord[0][0], lastFrameCord[0][0]), min(firstFrameCord[0][1], lastFrameCord[0][1]))
+    LeftDown = (LeftUp[0], min(firstFrameCord[1][1], lastFrameCord[1][1]))
+    RightUp = (min(firstFrameCord[2][0], lastFrameCord[2][0]), min(firstFrameCord[2][1], lastFrameCord[2][1]))
+    RightDown = (RightUp[0], min(firstFrameCord[3][1], lastFrameCord[3][1]))
+    return [LeftUp, LeftDown, RightUp, RightDown]
+
+def drawRectFromFrame(ax1, fig1, rawDat, frameId):
+    global start_point, end_point, rect, rectangle_coords, selectNotDone
+    _ = ax1.imshow(rawDat[frameId, ...])  # rawDat[frameId, dim_z, dim_x, ch]
+    start_point = None;  end_point = None;  rect = None;  selectNotDone = True;  rectangle_coords = []
+    cidPress = fig1.canvas.mpl_connect('button_press_event', on_press)  # connect the event signal (press, drag, release) to the callback functions
+    cidDrag = fig1.canvas.mpl_connect('motion_notify_event', on_drag)
+    cidRelease = fig1.canvas.mpl_connect('button_release_event', on_release)
+    while selectNotDone:  plt.pause(0.3)
+    fig1.canvas.mpl_disconnect(cidPress)  # disconnect event handler, using the same cid
+    fig1.canvas.mpl_disconnect(cidDrag)
+    fig1.canvas.mpl_disconnect(cidRelease)
+    FrameCord = rectangle_coords; print('selected frame: ', str(frameId), ' ROI is: ', FrameCord)
+    return FrameCord
 
 
+# intThreshold = ?
 viabilityThreshold = 0.3
 zSlice = [403, 463]
 
@@ -92,23 +114,38 @@ print('Loading data folder: ' + root)
 # # # - - - read size of tiff stack - - - # # #
 rawDat = tifffile.imread(stackFilePath)   # load linear intensity data from stack. Dimension (Y, Z, X)
 dim_y, dim_z, dim_x = np.shape(rawDat)[0:3]
+maskCube = np.zeros([dim_y, dim_z, dim_x], dtype=int)
 
-fig1 = plt.figure(10);  plt.clf()
+fig1 = plt.figure(10, figsize=(3, dim_z/dim_x*3));  plt.clf()
+# fig1.canvas.manager.window.attributes('-topmost', 1);  fig1.canvas.manager.window.attributes('-topmost', 0)
+fig1.subplots_adjust(bottom=0, top=1, left=0, right=1)
 ax1 = fig1.subplot_mosaic("a")
-# # # drag and draw a rectangle at 1st frame to select ROI for viability (volume fraction) computation
-_ = ax1['a'].imshow(rawDat[0, :, :, :])
-start_point = None;  end_point = None;  rect = None;  selectNotDone = True;  rectangle_coords = []
-fig1.canvas.mpl_connect('button_press_event', on_press)
-fig1.canvas.mpl_connect('motion_notify_event', on_drag)
-fig1.canvas.mpl_connect('button_release_event', on_release)
-while selectNotDone:  plt.pause(0.3)
-print('first frame ROI is: ', rectangle_coords)
 
-# # # draw second rectangle at last frame
-_ = ax1['a'].imshow(rawDat[-1, :, :, :])
-start_point = None;  end_point = None;  rect = None;  selectNotDone = True;  rectangle_coords = []
-fig1.canvas.mpl_connect('button_press_event', on_press)
-fig1.canvas.mpl_connect('motion_notify_event', on_drag)
-roi_lastFrame = fig1.canvas.mpl_connect('button_release_event', on_release)
-while selectNotDone:  plt.pause(0.3)
-print('second frame ROI is: ', rectangle_coords)
+# # # draw rectangles at the first and last frames, and the overlapping cubic is the 3D ROI for viability (volume fraction) computation
+# _ = ax1['a'].imshow(rawDat[-1, :, :, :])
+# start_point = None;  end_point = None;  rect = None;  selectNotDone = True;  rectangle_coords = []
+# fig1.canvas.mpl_connect('button_press_event', on_press)
+# fig1.canvas.mpl_connect('motion_notify_event', on_drag)
+# roi_lastFrame = fig1.canvas.mpl_connect('button_release_event', on_release)
+# while selectNotDone:  plt.pause(0.3)
+# lastFrameCord = rectangle_coords;  print('second frame ROI is: ', lastFrameCord)
+firstFrameCord = drawRectFromFrame(ax1['a'], fig1, rawDat, 0)
+lastFrameCord = drawRectFromFrame(ax1['a'], fig1, rawDat, -1)
+
+# # # create 3D mask from the two rectangles' coordinates
+overlapRect = findOverlapRect(firstFrameCord, lastFrameCord)
+maskCube[overlapRect[0][1]:overlapRect[1][1], :, overlapRect[0][0]:overlapRect[2][0]] = 1
+
+# # # load linear intensity stack, and apply intThreshold + maskCube to segment cell regions
+frameIndex = -1
+linIntFilePath = root + '/' + DataId[:-14] + 'IntImg.tif'
+tmp_linIntFrame = tifffile.imread(linIntFilePath, key=frameIndex)
+log_tmp = 10 * np.log10(tmp_linIntFrame)
+
+fig2 = plt.figure(11); plt.clf()
+ax2 = fig2.subplot_mosaic("abcd")
+ax2['a'].imshow(rawDat[0, ..., 0], cmap='gray')
+ax2['b'].imshow(rawDat[0, ..., 1], cmap='gray')
+ax2['c'].imshow(rawDat[0, ..., 2], cmap='gray')
+ax2['d'].imshow(log_tmp, cmap='gray')
+
