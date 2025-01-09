@@ -32,8 +32,17 @@ Compute viability based on the normalized LIV by calculating the volume fraction
 Author: Yijie, Lida
 
 Parameters: 
+zSlice: depth range of Z-stack images for computing viability
+intThreshold: normalized log intensity threshold to mask out cell regions. Note that the log intensity image (en-face) is the maximum log intensity projection along each raster period, then being denoised by Cellpose v3 using 'cyto3' model.
+viabilityThreshold: LIV threshold to determine whether the LIV value in a pixel represents Living / dead. 
 
 How to use:
+1. run ImageConverter.py, to convert raw data (log int) to linear and log int image stacks (Data_IntImg.tif and Data_3d_view.tif). 
+2. run VarianceToRGB.py, to encode temporal variance of log int as Hue, max log int (during raster period) as Value, 1 as Saturation. 
+3. open Data_IntImg_LIV.tif in ImageJ, and measure the tilting angle along X (Bscan_tilt) and Y (Y_tilt)
+4. run \Fiji_macro\AutoRotateMacro.ijm, manually set 'Bscan_tilt' and 'Y_tilt' from the above measurements, and process all 3 image stacks. 
+5. open aligned LIV image (Data_IntImg_LIV.tif), and select the depth range for computing viability. 
+6. run VarianceToViability.py, manually set 'zSlice' to be the determined depth range, and select the LIV image (Data_IntImg_LIV.tif) to start computing viability. 
 
 Para setting: 
 
@@ -104,7 +113,7 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
 
 
 
-zSlice = [417, 477]  # manual z slicing range to select depth region for computing viability
+zSlice = [408, 490]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.3
 viabilityThreshold = 0.2
 
@@ -175,6 +184,6 @@ for frameIndex in zSliceList:
     # sys.stdout.write('\r')
     # j = (frameIndex - zSliceList[0] + 1) / len(zSliceList)
     # sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' couting viability over Zstack')
-    # plt.pause(0.01)
+    plt.pause(0.01)
 
 print('Mean viability is: ', str(np.mean(viabilityList)))
