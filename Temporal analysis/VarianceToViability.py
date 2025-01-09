@@ -1,17 +1,18 @@
-import os
+# import os
 import sys
-import time
+# import time
 import numpy as np
-from numpy import fft
-import gc
-import matplotlib.cm as cm
+# from numpy import fft
+# import gc
+# import matplotlib.cm as cm
 # from tqdm.auto import tqdm
 # import pandas as pd
 # from scipy.stats import norm
 # from scipy.optimize import curve_fit
-from lowpass_filter import butter_lowpass_filter
-from MapVarToRGB import num_to_rgb
-from matplotlib.colors import hsv_to_rgb
+# from lowpass_filter import butter_lowpass_filter
+# from MapVarToRGB import num_to_rgb
+# from matplotlib.colors import hsv_to_rgb
+import imagej
 import tifffile
 import os
 from tkinter import *
@@ -20,8 +21,9 @@ import matplotlib.pyplot as plt
 # from mpl_point_clicker import clicker
 from matplotlib.backend_bases import MouseButton
 import matplotlib.patches as patches
-# import matplotlib
-# matplotlib.use("Qt5Agg")
+from cellpose import denoise #, utils, io
+import matplotlib
+matplotlib.use("Qt5Agg")
 
 
 """
@@ -80,9 +82,9 @@ def on_release(event):
 
 def findOverlapRect(firstFrameCord, lastFrameCord):
     # firstFrameCord, lastFrameCord = (x, y)
-    LeftUp = (max(firstFrameCord[0][0], lastFrameCord[0][0]), min(firstFrameCord[0][1], lastFrameCord[0][1]))
+    LeftUp = (max(firstFrameCord[0][0], lastFrameCord[0][0]), max(firstFrameCord[0][1], lastFrameCord[0][1]))
     LeftDown = (LeftUp[0], min(firstFrameCord[1][1], lastFrameCord[1][1]))
-    RightUp = (min(firstFrameCord[2][0], lastFrameCord[2][0]), min(firstFrameCord[2][1], lastFrameCord[2][1]))
+    RightUp = (min(firstFrameCord[2][0], lastFrameCord[2][0]), max(firstFrameCord[2][1], lastFrameCord[2][1]))
     RightDown = (RightUp[0], min(firstFrameCord[3][1], lastFrameCord[3][1]))
     return [LeftUp, LeftDown, RightUp, RightDown]
 
@@ -97,55 +99,82 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     fig1.canvas.mpl_disconnect(cidPress)  # disconnect event handler, using the same cid
     fig1.canvas.mpl_disconnect(cidDrag)
     fig1.canvas.mpl_disconnect(cidRelease)
-    FrameCord = rectangle_coords; print('selected frame: ', str(frameId), ' ROI is: ', FrameCord)
-    return FrameCord
+    FrameCoord = rectangle_coords; print('selected frame: ', str(frameId), ' ROI is: ', FrameCoord)
+    return FrameCoord
 
 
-# intThreshold = ?
-viabilityThreshold = 0.3
-zSlice = [403, 463]
+
+zSlice = [417, 477]  # manual z slicing range to select depth region for computing viability
+intThreshold = 0.3
+viabilityThreshold = 0.2
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_LIV.tif")])
 DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath);  tk.destroy()
-if '_LIV' in DataId:  pass
-else:  raise(ValueError('Select variance image for better visualization'))
-print('Loading data folder: ' + root)
+print('Loading fileID: ' + stackFilePath)
 
-# # # - - - read size of tiff stack - - - # # #
+# # # # - - - read size of tiff stack - - - # # #
 rawDat = tifffile.imread(stackFilePath)   # load linear intensity data from stack. Dimension (Y, Z, X)
-dim_y, dim_z, dim_x = np.shape(rawDat)[0:3]
-maskCube = np.zeros([dim_y, dim_z, dim_x], dtype=int)
+dim_z, dim_y, dim_x = np.shape(rawDat)[0:3]  # [dim_y, dim_z, dim_x] original dimensions before applying AutoRotateMacro.ijm
+cropCube = np.zeros([dim_z, dim_y, dim_x], dtype=int)
+model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
+zSliceList = np.linspace(zSlice[0], zSlice[1], zSlice[1]-zSlice[0]+1).astype('int')
 
-fig1 = plt.figure(10, figsize=(3, dim_z/dim_x*3));  plt.clf()
-# fig1.canvas.manager.window.attributes('-topmost', 1);  fig1.canvas.manager.window.attributes('-topmost', 0)
-fig1.subplots_adjust(bottom=0, top=1, left=0, right=1)
-ax1 = fig1.subplot_mosaic("a")
+fig1 = plt.figure(10, figsize=(12, 5));  plt.clf()
+# # fig1.canvas.manager.window.attributes('-topmost', 1);  fig1.canvas.manager.window.attributes('-topmost', 0)
+# # fig1.subplots_adjust(bottom=0, top=1, left=0, right=1)
+ax1 = fig1.subplot_mosaic("abc;abc;ddd")
+ax1['a'].title.set_text('Drag rectangle to select ROI from dOCT')
+ax1['b'].title.set_text('After manual cropping')
+ax1['c'].title.set_text('After segmentation')
+ax1['d'].title.set_text('Mean Viability')
+ax1['d'].set_ylim([0, 1]);  ax1['d'].set_xlim([0, len(zSliceList)]);
 
 # # # draw rectangles at the first and last frames, and the overlapping cubic is the 3D ROI for viability (volume fraction) computation
-# _ = ax1['a'].imshow(rawDat[-1, :, :, :])
-# start_point = None;  end_point = None;  rect = None;  selectNotDone = True;  rectangle_coords = []
-# fig1.canvas.mpl_connect('button_press_event', on_press)
-# fig1.canvas.mpl_connect('motion_notify_event', on_drag)
-# roi_lastFrame = fig1.canvas.mpl_connect('button_release_event', on_release)
-# while selectNotDone:  plt.pause(0.3)
-# lastFrameCord = rectangle_coords;  print('second frame ROI is: ', lastFrameCord)
-firstFrameCord = drawRectFromFrame(ax1['a'], fig1, rawDat, 0)
-lastFrameCord = drawRectFromFrame(ax1['a'], fig1, rawDat, -1)
+frameIndex = zSliceList[0]
+firstFrameCord = drawRectFromFrame(ax1['a'], fig1, rawDat, frameIndex)
+frameIndex = zSliceList[-1]
+lastFrameCord = drawRectFromFrame(ax1['a'], fig1, rawDat, frameIndex)
 
 # # # create 3D mask from the two rectangles' coordinates
 overlapRect = findOverlapRect(firstFrameCord, lastFrameCord)
-maskCube[overlapRect[0][1]:overlapRect[1][1], :, overlapRect[0][0]:overlapRect[2][0]] = 1
+cropCube[:, overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = 1  # dim_z, dim_y, dim_x
 
-# # # load linear intensity stack, and apply intThreshold + maskCube to segment cell regions
-frameIndex = -1
-linIntFilePath = root + '/' + DataId[:-14] + 'IntImg.tif'
-tmp_linIntFrame = tifffile.imread(linIntFilePath, key=frameIndex)
-log_tmp = 10 * np.log10(tmp_linIntFrame)
+# # load linear intensity stack, apply cropCube, denoising using Cellpose v3, apply intThreshold to segment cell regions
+# # 3D version is only for test visualize, a 2D version is preferred which is supposed to work with an en-face image stack
+linIntFilePath = root + '/' + DataId[:-15] + '_3d_view.tif'
+rawLivFilePath = root + '/' + DataId[:-15] + '_IntImg_LIV_raw.tif'
 
-fig2 = plt.figure(11); plt.clf()
-ax2 = fig2.subplot_mosaic("abcd")
-ax2['a'].imshow(rawDat[0, ..., 0], cmap='gray')
-ax2['b'].imshow(rawDat[0, ..., 1], cmap='gray')
-ax2['c'].imshow(rawDat[0, ..., 2], cmap='gray')
-ax2['d'].imshow(log_tmp, cmap='gray')
 
+viabilityList = []
+for frameIndex in zSliceList:
+    logIntFrame = tifffile.imread(linIntFilePath, key=frameIndex)
+    # ax1['a'].imshow(logIntFrame, cmap='gray')
+    cropIntFrame = logIntFrame.copy() * cropCube[frameIndex, ...]
+    # ax1['b'].imshow(cropIntFrame, cmap='gray')
+    _, _, _, cropIntFrame_dn = model.eval(cropIntFrame, diameter=None, channels=[0, 0]) # , niter=200000)
+    ax1['b'].imshow(cropIntFrame_dn, cmap='gray')
+    frameMask = cropIntFrame_dn[..., 0] > intThreshold
+    ax1['c'].imshow(frameMask, cmap='gray')
+
+    # # # apply frameMask to rawLIV en-face image
+    rawLivFrame = tifffile.imread(rawLivFilePath, key=frameIndex)
+    rawLivFrame_mask = rawLivFrame * frameMask
+    rawLivFrame_mask[rawLivFrame_mask == 0] = np.nan
+    # ax1['c'].imshow(rawLivFrame_mask, cmap='gray')
+    cntLiving = np.sum(rawLivFrame_mask > viabilityThreshold)
+    # print('Living count is: ', str(cntLiving))
+    cntDead = np.sum(rawLivFrame_mask < viabilityThreshold)
+    # print('Dead count is: ', str(cntDead))
+    cntAllPix = np.count_nonzero(~np.isnan(rawLivFrame_mask))
+    # print('All pixel number is: ', str(cntAllPix))
+    # print('Residual missed count is: ', str(cntAllPix - cntDead - cntLiving))
+    viability = cntLiving / (cntLiving + cntDead)
+    viabilityList.append(viability)
+    ax1['d'].scatter(frameIndex-zSliceList[0], np.mean(viabilityList), color='#6ea6db', marker='o', s=7)
+
+    # sys.stdout.write('\r')
+    # j = (frameIndex - zSliceList[0] + 1) / len(zSliceList)
+    # sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' couting viability over Zstack')
+    # plt.pause(0.01)
+
+print('Mean viability is: ', str(np.mean(viabilityList)))
