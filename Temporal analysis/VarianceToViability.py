@@ -112,7 +112,7 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
 
 
 
-zSlice = [405, 482]  # manual z slicing range to select depth region for computing viability
+zSlice = [409, 450]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.3
 viabilityThreshold = 0.2
 
@@ -161,29 +161,32 @@ for frameIndex in zSliceList:
     cropIntFrame = logIntFrame * cropCube[frameIndex, ...]  # margin zeros should not be passed to cellpose, otherwise indexing error will raise
     cropIntFrame_seg = cropIntFrame[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]]
     # ax1['b'].imshow(cropIntFrame, cmap='gray')
-    _, _, _, cropIntFrame_seg_dn = model.eval(cropIntFrame_seg, diameter=None, channels=[0, 0]) # , niter=200000)
-    _ = cropCube[frameIndex, ...].copy()
-    cropIntFrameDn = _.astype('float')
-    cropIntFrameDn[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = cropIntFrame_seg_dn[..., 0]
-    ax1['b'].imshow(cropIntFrameDn, cmap='gray')
-    frameMask = cropIntFrameDn > intThreshold
-    ax1['c'].imshow(frameMask, cmap='gray')
+    try:
+        _, _, _, cropIntFrame_seg_dn = model.eval(cropIntFrame_seg, diameter=None, channels=[0, 0]) # , niter=200000)
+        _ = cropCube[frameIndex, ...].copy()
+        cropIntFrameDn = _.astype('float')
+        cropIntFrameDn[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = cropIntFrame_seg_dn[..., 0]
+        ax1['b'].imshow(cropIntFrameDn, cmap='gray')
+        frameMask = cropIntFrameDn > intThreshold
+        ax1['c'].imshow(frameMask, cmap='gray')
 
-    # # # apply frameMask to rawLIV en-face image
-    rawLivFrame = tifffile.imread(rawLivFilePath, key=frameIndex)
-    rawLivFrame_mask = rawLivFrame * frameMask
-    rawLivFrame_mask[rawLivFrame_mask == 0] = np.nan
-    # ax1['c'].imshow(rawLivFrame_mask, cmap='gray')
-    cntLiving = np.sum(rawLivFrame_mask > viabilityThreshold)
-    # print('Living count is: ', str(cntLiving))
-    cntDead = np.sum(rawLivFrame_mask < viabilityThreshold)
-    # print('Dead count is: ', str(cntDead))
-    cntAllPix = np.count_nonzero(~np.isnan(rawLivFrame_mask))
-    # print('All pixel number is: ', str(cntAllPix))
-    # print('Residual missed count is: ', str(cntAllPix - cntDead - cntLiving))
-    viability = cntLiving / (cntLiving + cntDead)
-    viabilityList.append(viability)
-    ax1['d'].scatter(frameIndex-zSliceList[0], np.mean(viabilityList), color='#6ea6db', marker='o', s=7)
+        # # # apply frameMask to rawLIV en-face image
+        rawLivFrame = tifffile.imread(rawLivFilePath, key=frameIndex)
+        rawLivFrame_mask = rawLivFrame * frameMask
+        rawLivFrame_mask[rawLivFrame_mask == 0] = np.nan
+        # ax1['c'].imshow(rawLivFrame_mask, cmap='gray')
+        cntLiving = np.sum(rawLivFrame_mask > viabilityThreshold)
+        # print('Living count is: ', str(cntLiving))
+        cntDead = np.sum(rawLivFrame_mask < viabilityThreshold)
+        # print('Dead count is: ', str(cntDead))
+        cntAllPix = np.count_nonzero(~np.isnan(rawLivFrame_mask))
+        # print('All pixel number is: ', str(cntAllPix))
+        # print('Residual missed count is: ', str(cntAllPix - cntDead - cntLiving))
+        viability = cntLiving / (cntLiving + cntDead)
+        viabilityList.append(viability)
+        ax1['d'].scatter(frameIndex-zSliceList[0], np.mean(viabilityList), color='#6ea6db', marker='o', s=7)
+    except IndexError:
+        pass
 
     # sys.stdout.write('\r')
     # j = (frameIndex - zSliceList[0] + 1) / len(zSliceList)
