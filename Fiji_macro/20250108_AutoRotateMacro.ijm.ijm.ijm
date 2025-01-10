@@ -44,9 +44,9 @@ close();
 saveAs("Tiff", LivFilePath);
 close();
 //rotate raw liv file; 
-rawLivFile = "Data_IntImg_LIV.tif"
+rawLivFile = "Data_IntImg_LIV_raw.tif"
 rawLivFilePath = dir + rawLivFile
-open(lrawLivFilePath);
+open(rawLivFilePath);
 title=getTitle();
 run("Rotate... ", "angle=Bscan_tilt grid=1 interpolation=Bilinear stack");
 run("Reslice [/]...", "output=1.000 start=Left rotate avoid");
