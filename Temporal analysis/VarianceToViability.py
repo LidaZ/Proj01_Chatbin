@@ -27,25 +27,24 @@ matplotlib.use("Qt5Agg")
 
 
 """
-Open source project for cell counting system. 
-Compute viability based on the normalized LIV by calculating the volume fraction above and under a given threshold. 
-Author: Yijie, Lida
-
-Parameters: 
-zSlice: depth range of Z-stack images for computing viability
-intThreshold: normalized log intensity threshold to mask out cell regions. Note that the log intensity image (en-face) is the maximum log intensity projection along each raster period, then being denoised by Cellpose v3 using 'cyto3' model.
-viabilityThreshold: LIV threshold to determine whether the LIV value in a pixel represents Living / dead. 
-
-How to use:
-1. run ImageConverter.py, to convert raw data (log int) to linear and log int image stacks (Data_IntImg.tif and Data_3d_view.tif). 
-2. run VarianceToRGB.py, to encode temporal variance of log int as Hue, max log int (during raster period) as Value, 1 as Saturation. 
-3. open Data_IntImg_LIV.tif in ImageJ, and measure the tilting angle along X (Bscan_tilt) and Y (Y_tilt)
-4. run \Fiji_macro\AutoRotateMacro.ijm, manually set 'Bscan_tilt' and 'Y_tilt' from the above measurements, and process all 3 image stacks. 
-5. open aligned LIV image (Data_IntImg_LIV.tif), and select the depth range for computing viability. 
-6. run VarianceToViability.py, manually set 'zSlice' to be the determined depth range, and select the LIV image (Data_IntImg_LIV.tif) to start computing viability. 
-
-Para setting: 
-
+# Open source project for cell counting system. 
+# Compute viability based on the normalized LIV by calculating the volume fraction above and under a given threshold. 
+# Author: Yijie, Lida
+# 
+# Parameters: 
+# zSlice: depth range of Z-stack images for computing viability
+# intThreshold: normalized log intensity threshold to mask out cell regions. Note that the log intensity image (en-face) is the maximum log intensity projection along each raster period, then being denoised by Cellpose v3 using 'cyto3' model.
+# viabilityThreshold: LIV threshold to determine whether the LIV value in a pixel represents Living / dead. 
+# 
+# How to use:
+# 1. run ImageConverter.py, to convert raw data (log int) to linear and log int image stacks (Data_IntImg.tif and Data_3d_view.tif). 
+# 2. run VarianceToRGB.py, to encode temporal variance of log int as Hue, max log int (during raster period) as Value, 1 as Saturation. 
+# 3. open Data_IntImg_LIV.tif in ImageJ, and measure the tilting angle along X (Bscan_tilt) and Y (Y_tilt)
+# 4. run /Fiji_macro/AutoRotateMacro.ijm, manually set 'Bscan_tilt' and 'Y_tilt' from the above measurements, and process all 3 image stacks. 
+# 5. open aligned LIV image (Data_IntImg_LIV.tif), and select the depth range for computing viability. 
+# 6. run VarianceToViability.py, manually set 'zSlice' to be the determined depth range, and select the LIV image (Data_IntImg_LIV.tif) to start computing viability. 
+# 
+# Para setting: 
 """
 
 
@@ -113,7 +112,7 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
 
 
 
-zSlice = [408, 490]  # manual z slicing range to select depth region for computing viability
+zSlice = [405, 482]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.3
 viabilityThreshold = 0.2
 
@@ -135,7 +134,7 @@ ax1 = fig1.subplot_mosaic("abc;abc;ddd")
 ax1['a'].title.set_text('Drag rectangle to select ROI from dOCT')
 ax1['b'].title.set_text('After manual cropping')
 ax1['c'].title.set_text('After segmentation')
-ax1['d'].title.set_text('Mean Viability')
+ax1['d'].set_ylabel('Mean Viability');  ax1['d'].set_xlabel('Computed en-face slice number')
 ax1['d'].set_ylim([0, 1]);  ax1['d'].set_xlim([0, len(zSliceList)]);
 
 # # # draw rectangles at the first and last frames, and the overlapping cubic is the 3D ROI for viability (volume fraction) computation
@@ -158,11 +157,16 @@ viabilityList = []
 for frameIndex in zSliceList:
     logIntFrame = tifffile.imread(linIntFilePath, key=frameIndex)
     # ax1['a'].imshow(logIntFrame, cmap='gray')
-    cropIntFrame = logIntFrame.copy() * cropCube[frameIndex, ...]
+    # cropIntFrame = logIntFrame.copy() * cropCube[frameIndex, ...]
+    cropIntFrame = logIntFrame * cropCube[frameIndex, ...]  # margin zeros should not be passed to cellpose, otherwise indexing error will raise
+    cropIntFrame_seg = cropIntFrame[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]]
     # ax1['b'].imshow(cropIntFrame, cmap='gray')
-    _, _, _, cropIntFrame_dn = model.eval(cropIntFrame, diameter=None, channels=[0, 0]) # , niter=200000)
-    ax1['b'].imshow(cropIntFrame_dn, cmap='gray')
-    frameMask = cropIntFrame_dn[..., 0] > intThreshold
+    _, _, _, cropIntFrame_seg_dn = model.eval(cropIntFrame_seg, diameter=None, channels=[0, 0]) # , niter=200000)
+    _ = cropCube[frameIndex, ...].copy()
+    cropIntFrameDn = _.astype('float')
+    cropIntFrameDn[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = cropIntFrame_seg_dn[..., 0]
+    ax1['b'].imshow(cropIntFrameDn, cmap='gray')
+    frameMask = cropIntFrameDn > intThreshold
     ax1['c'].imshow(frameMask, cmap='gray')
 
     # # # apply frameMask to rawLIV en-face image
