@@ -1,8 +1,12 @@
-Bscan_tilt = 0
-Y_tilt = 4.72
+Bscan_tilt =  3.83  
+Y_tilt = 4.91    
 
 filePath = File.openDialog("Open .tif for realignment");
-open(filePath);
+dir = File.getParent(filePath) + "\\";
+//rotate log int file; 
+logIntFile = "Data_3d_view.tif"
+logIntFilePath = dir + logIntFile
+open(logIntFilePath);
 title=getTitle();
 run("Rotate... ", "angle=Bscan_tilt grid=1 interpolation=Bilinear stack");
 run("Reslice [/]...", "output=1.000 start=Left rotate avoid");
@@ -17,6 +21,47 @@ title=getTitle();
 run("Scale...", "x=1.0 y=2 z=1.0 width=256 height=256 depth=700 interpolation=Bilinear average process create");
 selectImage(title);
 close();
-
-saveAs("Tiff", filePath);
+saveAs("Tiff", logIntFilePath);
 close();
+//rotate liv file; 
+LivFile = "Data_IntImg_LIV.tif"
+LivFilePath = dir + LivFile
+open(LivFilePath);
+title=getTitle();
+run("Rotate... ", "angle=Bscan_tilt grid=1 interpolation=Bilinear stack");
+run("Reslice [/]...", "output=1.000 start=Left rotate avoid");
+selectImage(title);
+close();
+title=getTitle();
+run("Rotate... ", "angle=Y_tilt grid=1 interpolation=Bilinear stack");
+run("Reslice [/]...", "output=1.000 start=Top rotate avoid");
+selectImage(title);
+close();
+title=getTitle();
+run("Scale...", "x=1.0 y=2 z=1.0 width=256 height=256 depth=700 interpolation=Bilinear average process create");
+selectImage(title);
+close();
+saveAs("Tiff", LivFilePath);
+close();
+//rotate raw liv file; 
+rawLivFile = "Data_IntImg_LIV.tif"
+rawLivFilePath = dir + rawLivFile
+open(lrawLivFilePath);
+title=getTitle();
+run("Rotate... ", "angle=Bscan_tilt grid=1 interpolation=Bilinear stack");
+run("Reslice [/]...", "output=1.000 start=Left rotate avoid");
+selectImage(title);
+close();
+title=getTitle();
+run("Rotate... ", "angle=Y_tilt grid=1 interpolation=Bilinear stack");
+run("Reslice [/]...", "output=1.000 start=Top rotate avoid");
+selectImage(title);
+close();
+title=getTitle();
+run("Scale...", "x=1.0 y=2 z=1.0 width=256 height=256 depth=700 interpolation=Bilinear average process create");
+selectImage(title);
+close();
+saveAs("Tiff", rawLivFilePath);
+close();
+
+open(LivFilePath);

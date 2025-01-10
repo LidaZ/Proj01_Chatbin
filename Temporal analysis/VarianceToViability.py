@@ -111,8 +111,7 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-
-zSlice = [409, 450]  # manual z slicing range to select depth region for computing viability
+zSlice = [442, 467]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.3
 viabilityThreshold = 0.2
 
@@ -160,13 +159,13 @@ for frameIndex in zSliceList:
     # cropIntFrame = logIntFrame.copy() * cropCube[frameIndex, ...]
     cropIntFrame = logIntFrame * cropCube[frameIndex, ...]  # margin zeros should not be passed to cellpose, otherwise indexing error will raise
     cropIntFrame_seg = cropIntFrame[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]]
-    # ax1['b'].imshow(cropIntFrame, cmap='gray')
+    ax1['b'].imshow(cropIntFrame, cmap='gray')
     try:
         _, _, _, cropIntFrame_seg_dn = model.eval(cropIntFrame_seg, diameter=None, channels=[0, 0]) # , niter=200000)
         _ = cropCube[frameIndex, ...].copy()
         cropIntFrameDn = _.astype('float')
         cropIntFrameDn[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = cropIntFrame_seg_dn[..., 0]
-        ax1['b'].imshow(cropIntFrameDn, cmap='gray')
+        # ax1['b'].imshow(cropIntFrameDn, cmap='gray')
         frameMask = cropIntFrameDn > intThreshold
         ax1['c'].imshow(frameMask, cmap='gray')
 
