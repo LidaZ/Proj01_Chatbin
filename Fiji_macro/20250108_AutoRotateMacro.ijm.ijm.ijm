@@ -1,5 +1,5 @@
-Bscan_tilt =  3.83  
-Y_tilt = 4.91    
+Bscan_tilt =  5.39   
+Y_tilt = 2.15    
 
 filePath = File.openDialog("Open .tif for realignment");
 dir = File.getParent(filePath) + "\\";
@@ -65,3 +65,4 @@ saveAs("Tiff", rawLivFilePath);
 close();
 
 open(LivFilePath);
+run("Orthogonal Views");
