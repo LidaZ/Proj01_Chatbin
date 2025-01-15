@@ -1,6 +1,9 @@
-Bscan_tilt =  -2.5
-Y_tilt = 8.4 
+Bscan_tilt =  -3
+Y_tilt = 9.3
 
+while (nImages>0) { 
+  selectImage(nImages); 
+  close(); }
 filePath = File.openDialog("Open .tif for realignment");
 dir = File.getParent(filePath) + "\\";
 //rotate log int file; 

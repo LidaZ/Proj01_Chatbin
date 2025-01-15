@@ -52,7 +52,7 @@ for patch in box1['boxes']:
 box2 = ax1['a'].boxplot(viaData_d2Liv, positions=[2, 3, 4, 10], sym='rx', patch_artist=True, showmeans=True)
 for median in box2['medians']:  median.set_color('black')
 for patch in box2['boxes']:
-    patch.set_facecolor('red')
+    patch.set_facecolor('green')
     patch.set_alpha(0.3)
 # ax1['a'].plot(mixProp, if86Da02, 'b--')
 # ax1['a'].plot(mixProp, ifDeadDa02, 'k:')
