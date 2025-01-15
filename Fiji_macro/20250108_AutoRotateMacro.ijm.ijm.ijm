@@ -1,14 +1,15 @@
-Bscan_tilt =  -3
-Y_tilt = 9.3
+Bscan_tilt =  -2.44
+Y_tilt = 10.1
 
-while (nImages>0) { 
-  selectImage(nImages); 
-  close(); }
+if (nImages>0) 
+	while (nImages>0) { 
+	  selectImage(nImages); 
+	  close(); } 
 filePath = File.openDialog("Open .tif for realignment");
 dir = File.getParent(filePath) + "\\";
 //rotate log int file; 
-logIntFile = "Data_3d_view.tif"
-logIntFilePath = dir + logIntFile
+logIntFile = "Data_3d_view.tif";
+logIntFilePath = dir + logIntFile;
 open(logIntFilePath);
 title=getTitle();
 run("Rotate... ", "angle=Bscan_tilt grid=1 interpolation=Bilinear stack");
@@ -27,8 +28,8 @@ close();
 saveAs("Tiff", logIntFilePath);
 close();
 //rotate liv file; 
-LivFile = "Data_IntImg_LIV.tif"
-LivFilePath = dir + LivFile
+LivFile = "Data_IntImg_LIV.tif";
+LivFilePath = dir + LivFile;
 open(LivFilePath);
 title=getTitle();
 run("Rotate... ", "angle=Bscan_tilt grid=1 interpolation=Bilinear stack");
@@ -47,8 +48,8 @@ close();
 saveAs("Tiff", LivFilePath);
 close();
 //rotate raw liv file; 
-rawLivFile = "Data_IntImg_LIV_raw.tif"
-rawLivFilePath = dir + rawLivFile
+rawLivFile = "Data_IntImg_LIV_raw.tif";
+rawLivFilePath = dir + rawLivFile;
 open(rawLivFilePath);
 title=getTitle();
 run("Rotate... ", "angle=Bscan_tilt grid=1 interpolation=Bilinear stack");
