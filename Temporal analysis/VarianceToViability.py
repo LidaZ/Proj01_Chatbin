@@ -111,7 +111,7 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-zSlice = [387, 410]  # manual z slicing range to select depth region for computing viability
+zSlice = [325, 365]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.3
 viabilityThreshold = 0.2
 

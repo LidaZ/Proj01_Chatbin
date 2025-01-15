@@ -1,5 +1,5 @@
-Bscan_tilt =  -2.44
-Y_tilt = 10.1
+Bscan_tilt = -0.48
+Y_tilt = 16.7  
 
 if (nImages>0) 
 	while (nImages>0) { 
