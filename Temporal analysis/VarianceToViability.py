@@ -111,7 +111,7 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-zSlice = [350, 430]  # manual z slicing range to select depth region for computing viability
+zSlice = [345, 380]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.3
 viabilityThreshold = 0.2
 
@@ -132,7 +132,7 @@ fig1 = plt.figure(10, figsize=(12, 5));  plt.clf()
 ax1 = fig1.subplot_mosaic("abc;abc;ddd")
 ax1['a'].title.set_text('Drag rectangle to select ROI from dOCT')
 ax1['b'].title.set_text('After manual cropping')
-ax1['c'].title.set_text('After segmentation')
+ax1['c'].title.set_text('Segmentation mask')
 ax1['d'].set_ylabel('Mean Viability');  ax1['d'].set_xlabel('Computed en-face slice number')
 ax1['d'].set_ylim([0, 1]);  ax1['d'].set_xlim([0, len(zSliceList)]);
 
@@ -156,6 +156,7 @@ viabilityList = []
 for frameIndex in zSliceList:
     logIntFrame = tifffile.imread(linIntFilePath, key=frameIndex)
     # ax1['a'].imshow(logIntFrame, cmap='gray')
+    ax1['a'].imshow(rawDat[frameIndex, ...])
     # cropIntFrame = logIntFrame.copy() * cropCube[frameIndex, ...]
     cropIntFrame = logIntFrame * cropCube[frameIndex, ...]  # margin zeros should not be passed to cellpose, otherwise indexing error will raise
     cropIntFrame_seg = cropIntFrame[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]]

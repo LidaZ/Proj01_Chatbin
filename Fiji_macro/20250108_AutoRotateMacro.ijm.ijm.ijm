@@ -1,5 +1,5 @@
-Bscan_tilt =  5.39   
-Y_tilt = 2.15    
+Bscan_tilt =  -2.5
+Y_tilt = 8.4 
 
 filePath = File.openDialog("Open .tif for realignment");
 dir = File.getParent(filePath) + "\\";
