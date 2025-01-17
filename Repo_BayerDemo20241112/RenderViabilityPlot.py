@@ -35,8 +35,7 @@ mixProp = np.array([0, 2, 3, 4, 10])  # 20%, 30%, 40%, 100%
 viaData_d1 = [mix20Via_d1, mix30Via_d1, mix40Via_d1, mix100Via_d1]
 viaData_d2Liv = [mix20Via_d2Liv, mix30Via_d2Liv, mix40Via_d2Liv, mix100Via_d2Liv]
 viaData_d2Dead = [mix20Via_d2Dead, mix30Via_d2Dead, mix40Via_d2Dead, mix100Via_d2Dead]
-# # if86Da02 = [86, 87.8, 88.7, 89.6, 95]
-# # ifDeadDa02 = [0, 19, 28.5, 38, 95]
+
 fig1 = plt.figure(10, figsize=(11, 4));  plt.clf()
 ax1 = fig1.subplot_mosaic("ab")
 
@@ -72,8 +71,6 @@ for patch in box2['boxes']:
 for flier in box2['fliers']:
     flier.set_marker('+')
     flier.set_markeredgecolor(boxColor2)
-# # ax1['a'].plot(mixProp, if86Da02, 'b--')
-# # ax1['a'].plot(mixProp, ifDeadDa02, 'k:')
 
 ax1['a'].set_xlim([0, 10.5])
 ax1['a'].set_ylim([0, 100])
@@ -113,8 +110,6 @@ for patch in box4['boxes']:
 for flier in box4['fliers']:
     flier.set_marker('+')
     flier.set_markeredgecolor(boxColor4)
-# # ax1['a'].plot(mixProp, if86Da02, 'b--')
-# # ax1['a'].plot(mixProp, ifDeadDa02, 'k:')
 
 ax1['b'].set_xlim([0, 10.5])
 ax1['b'].set_ylim([0, 100])

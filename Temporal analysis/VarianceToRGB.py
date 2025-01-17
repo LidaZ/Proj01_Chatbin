@@ -121,12 +121,23 @@ for batch_id in range(dim_y_raster):
     plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
     plt.pause(0.01)
 
-    # # # - - - check int fluctuation profile at designated pixel - - - # # #
-    # pix_loc = [250, 60]  # [Y_index, X_index]
-    # plt.figure(14); plt.clf(); plt.plot(rawDat_batch[:, pix_loc[0], pix_loc[1]])
-    # plt.plot(rawDat_batch_dc[:, pix_loc[0], pix_loc[1]])
-    # plt.plot(rawDat_batch_filt[:, pix_loc[0], pix_loc[1]])
-    # print('var is: ', str(np.var(rawDat_batch_filt[:, pix_loc[0], pix_loc[1]])))
+    # # # - - - check int fluctuation profile / frequency spec at a designated pixel - - - # # #
+    # pix_loc = [401, 131]  # [Y_index, X_index]
+    # lineProfile = rawDat_batch[:, pix_loc[0], pix_loc[1]]
+    # lineProfile_freq = np.abs(fft.fft(lineProfile))
+    # lineProfile_freqNorm = lineProfile_freq / np.max(lineProfile_freq)
+    # length_fft = round(len(lineProfile)/2)
+    #
+    # fig1 = plt.figure(14, figsize=(7, 7));  plt.clf()
+    # ax1 = fig1.subplot_mosaic("a;b")
+    # ax1['a'].cla()
+    # ax1['a'].plot(lineProfile)
+    # ax1['a'].set_xticks([0, 10, 20, 30], ["0", "0.2", "0.4", "0.6"])
+    # ax1['a'].set_xlabel('Time (s)')
+    # ax1['b'].cla()
+    # ax1['b'].plot(lineProfile_freqNorm[0:length_fft])
+    # ax1['b'].set_xticks([0, 4, 8, 12, 16], ["0", "6.25", "12.5", "18.75", "25.0"])  # 50Hz/32
+    # ax1['b'].set_xlabel('Frequency (Hz)')
 
 gc.collect()
 
