@@ -105,7 +105,7 @@ if multiFolderProcess:
     FileNum = len(DataFold_list)
 
 else:
-    tk = Tk(); tk.withdraw(); DataFold_list = filedialog.askopenfilename(filetypes=[("", "*")], multiple = True)
+    tk = Tk(); tk.withdraw(); DataFold_list = filedialog.askopenfilename(filetypes=[("", "*.bin")], multiple = True)
     tk.destroy()
     FileNum = np.shape(DataFold_list)[0]
 
