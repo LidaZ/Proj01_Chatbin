@@ -111,7 +111,7 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-zSlice = [290, 350]  # manual z slicing range to select depth region for computing viability
+zSlice = [360, 420]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.3
 viabilityThreshold = 0.2
 
@@ -133,8 +133,8 @@ ax1 = fig1.subplot_mosaic("abc;abc;ddd")
 ax1['a'].title.set_text('Drag rectangle to select ROI from dOCT')
 ax1['b'].title.set_text('After manual cropping')
 ax1['c'].title.set_text('Segmentation mask')
-ax1['d'].set_ylabel('Mean Viability');  ax1['d'].set_xlabel('Computed en-face slice number')
-ax1['d'].set_ylim([0, 1]);  ax1['d'].set_xlim([0, len(zSliceList)]);
+ax1['d'].set_ylabel('Mean Viability');  ax1['d'].set_xlabel('En-face slice along depth (um)')
+ax1['d'].set_ylim([-0.01, 1]);  ax1['d'].set_xlim([0, len(zSliceList)*2]);
 
 # # # draw rectangles at the first and last frames, and the overlapping cubic is the 3D ROI for viability (volume fraction) computation
 frameIndex = zSliceList[0]
@@ -186,7 +186,7 @@ for frameIndex in zSliceList:
         # viability = meanInt_mask
         # * * * * * * * BULLSHIT func: compute mean logInt (maybe linInt) from the cells  * * * * * * * * #
         viabilityList.append(viability)
-        ax1['d'].scatter(frameIndex-zSliceList[0], np.mean(viabilityList), color='#6ea6db', marker='o', s=7)
+        ax1['d'].scatter((frameIndex-zSliceList[0])*2, viability, color='#6ea6db', marker='o', s=7)  # , np.mean(viabilityList)
     except IndexError:
         pass
 
