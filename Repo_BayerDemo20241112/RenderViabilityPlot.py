@@ -115,3 +115,31 @@ ax1['b'].set_xlim([0, 10.5])
 ax1['b'].set_ylim([0, 100])
 ax1['b'].set_xticks([0, 2, 3, 4, 10],["0%", "20%", "30%", "40%", "100%"])
 ax1['b'].set_yticks([0, 20, 40, 60, 80, 100],["0%", "20%", "40%", "60%", "80%", "100%"])
+
+
+
+# # # # - - - 2nd visit mean normalized intensity vs. viability - - - # # #
+# # # # - - - 10 enface slices were selected in ImageJ, threshold set as auto, measure mean int - - - # # #
+# vialB_65via = np.array([11.6, 8.9, 12.1]) /255
+# viaA_0via = np.array([3.38, 3.6, 3.37]) /255
+# viaC_32via = np.array([4.58, 11.6, 9.2]) /255
+# viaD_61via = np.array([12.7, 24.2, 32.3]) /255
+# viaE_51via = np.array([5.1, 4.3, 12.2]) /255
+# viaF_37via = np.array([7.3, 7.1, 14.4]) /255
+# viaG_68via = np.array([18.7, 29.1]) /255
+# viaH_0via = np.array([3.9, 2.3, 1.3]) /255
+# viaI_29via = np.array([15.5, 18.2, 17.4]) /255
+# meanIntList = [viaA_0via, viaH_0via, viaI_29via, viaC_32via, viaF_37via, viaE_51via, viaD_61via, vialB_65via, viaG_68via]
+# viaList = np.array([1, 1, 29, 32, 37, 51, 61, 65, 68])
+#
+# fig1 = plt.figure(10, figsize=(5, 4));  plt.clf()
+# ax1 = fig1.subplot_mosaic("a")
+# ax1['a'].set_title('Mean normalized log intensity at various viability')
+# ax1['a'].set_xlabel('Viability by NC202 (%)')
+# ax1['a'].set_ylabel('Mean normalized OCT intensity (a.u.)')
+# box1 = ax1['a'].boxplot(meanIntList, positions=[1, 2, 29, 32, 37, 51, 61, 65, 68], widths=2, sym='bx', patch_artist=True)
+# ax1['a'].set_xlim([0, 70])
+# ax1['a'].set_ylim([0, 0.13])
+# ax1['a'].set_xticks([0, 15, 30, 45, 60, 75],["0%", "15%", "30%", "45%", "60%", "75%"])
+# ax1['a'].set_yticks([0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12],["0", "0.02", "0.04", "0.06", "0.08", "0.10", "0.12"])
+# # # # - - - Trash data process, total waste of life - - - # # #
