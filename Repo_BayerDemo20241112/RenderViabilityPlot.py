@@ -120,15 +120,15 @@ ax1['b'].set_yticks([0, 20, 40, 60, 80, 100],["0%", "20%", "40%", "60%", "80%", 
 
 # # # # - - - 2nd visit mean normalized intensity vs. viability - - - # # #
 # # # # - - - 10 enface slices were selected in ImageJ, threshold set as auto, measure mean int - - - # # #
-# vialB_65via = np.array([11.6, 8.9, 12.1]) /255
-# viaA_0via = np.array([3.38, 3.6, 3.37]) /255
-# viaC_32via = np.array([4.58, 11.6, 9.2]) /255
-# viaD_61via = np.array([12.7, 24.2, 32.3]) /255
-# viaE_51via = np.array([5.1, 4.3, 12.2]) /255
-# viaF_37via = np.array([7.3, 7.1, 14.4]) /255
-# viaG_68via = np.array([18.7, 29.1]) /255
-# viaH_0via = np.array([3.9, 2.3, 1.3]) /255
-# viaI_29via = np.array([15.5, 18.2, 17.4]) /255
+# vialB_65via = np.array([55.1, 55.3, 50.2]) /255
+# viaA_0via = np.array([47.8, 48.5, 42.3]) /255
+# viaC_32via = np.array([48.7, 63.7, 54.3]) /255
+# viaD_61via = np.array([41.45, 63, 60.4]) /255
+# viaE_51via = np.array([57.8, 48.2, 60.6]) /255
+# viaF_37via = np.array([62.7, 49.7, 67.1]) /255
+# viaG_68via = np.array([74.8, 64.8]) /255
+# viaH_0via = np.array([34.3, 32, 27.7]) /255
+# viaI_29via = np.array([65.6, 66.6, 68]) /255
 # meanIntList = [viaA_0via, viaH_0via, viaI_29via, viaC_32via, viaF_37via, viaE_51via, viaD_61via, vialB_65via, viaG_68via]
 # viaList = np.array([1, 1, 29, 32, 37, 51, 61, 65, 68])
 #
@@ -139,7 +139,7 @@ ax1['b'].set_yticks([0, 20, 40, 60, 80, 100],["0%", "20%", "40%", "60%", "80%", 
 # ax1['a'].set_ylabel('Mean normalized OCT intensity (a.u.)')
 # box1 = ax1['a'].boxplot(meanIntList, positions=[1, 2, 29, 32, 37, 51, 61, 65, 68], widths=2, sym='bx', patch_artist=True)
 # ax1['a'].set_xlim([0, 70])
-# ax1['a'].set_ylim([0, 0.13])
+# ax1['a'].set_ylim([0, 0.3])
 # ax1['a'].set_xticks([0, 15, 30, 45, 60, 75],["0%", "15%", "30%", "45%", "60%", "75%"])
-# ax1['a'].set_yticks([0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12],["0", "0.02", "0.04", "0.06", "0.08", "0.10", "0.12"])
+# ax1['a'].set_yticks([0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30],["0", "0.05", "0.10", "0.15", "0.20", "0.25", "0.30"])
 # # # # - - - Trash data process, total waste of life - - - # # #
