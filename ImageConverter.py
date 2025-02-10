@@ -68,6 +68,7 @@ display_proc = False  # Set as True if monitor img during converting
 gpu_proc = True
 
 batch_initial_limit = 2.5  # GB, set the file size limit exceeding which enabling batch process
+batchProcPressLev = 1  # lev=0 for laptop when ram is small, lev=1 for pc when ram is large
 proc_batch = 1
 
 
@@ -149,7 +150,7 @@ for FileId in range(FileNum):
         proc_batch = 1
     elif dataType == '3d':
         if np.shape(rawDat)[0]/1e9 > batch_initial_limit:  # if file size is larger than 2GB, enable batch process
-            proc_batch = 2 ** ( int(np.floor(np.shape(rawDat)[0]/1e9)) - 0 ).bit_length()  # find the smallest power of 2 greater than file size in GB as batch number
+            proc_batch = 2 ** ( int(np.floor(np.shape(rawDat)[0]/1e9)) - batchProcPressLev).bit_length()  # find the smallest power of 2 greater than file size in GB as batch number
             if dim_y % proc_batch != 0:
                 raise ValueError('Y dimension is ' + str(dim_y) + ', reset process batch number to make dim_y divisible')
                 patch = Tk();  E = Entry(patch);  E.pack();  B = Button(patch, text = "Reset batch number", command = close_window);  B.pack()
