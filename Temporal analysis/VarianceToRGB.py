@@ -50,8 +50,8 @@ saveImg = True
 
 
 hueRange = [0., 1]  # LIV (variance): 0~30 / LIV_norm: 0~1
-octRangedB = [0, 50]  # set dynamic range of log OCT signal display
-if sys_ivs800:  octRangedB = [-5, 25]
+if sys_ivs800:      octRangedB = [-5, 25]
+else:    octRangedB = [0, 50]  # set dynamic range of log OCT signal display
 
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_IntImg.tif")])
