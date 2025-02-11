@@ -101,7 +101,7 @@ display_proc = False  # Set as True if monitor img during converting
 gpu_proc = True
 
 batch_initial_limit = 2.5  # GB, set the file size limit exceeding which enabling batch process
-batchProcPressLev = 1  # lev=0 for laptop when ram is small, lev=1 for pc when ram is large
+batchProcPressLev = 0  # lev=0 for laptop when ram is small, lev=1 for pc when ram is large
 proc_batch = 1
 
 
