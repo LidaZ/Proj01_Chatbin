@@ -53,7 +53,6 @@ hueRange = [0., 1]  # LIV (variance): 0~30 / LIV_norm: 0~1
 if sys_ivs800:      octRangedB = [-5, 25]
 else:    octRangedB = [0, 50]  # set dynamic range of log OCT signal display
 
-
 if multiFolderProcess:
     root = tk.Tk(); root.withdraw(); Fold_list = []; DataFold_list = []; extension = ['_IntImg.tif']
     folderPath = filedialog.askdirectory()
@@ -100,11 +99,13 @@ for FileId in range(FileNum):
     batchProj_sat = np.ones((dim_z, dim_x), 'float32')
     varRawImg = np.zeros((dim_y_raster, dim_z, dim_x), 'float32')
 
-    figsize_mag = 3
     if 'fig1' in globals():  pass
     else:
+        figsize_mag = 3
         fig1 = plt.figure(16, figsize=(figsize_mag, dim_z / dim_x * figsize_mag));   plt.clf()
         ax1 = fig1.subplot_mosaic("a")
+    sys.stdout.write('\n')
+    sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': ' + str(FileId + 1) + '/' + str(FileNum))
     # dim_y_raster = 1
     for batch_id in range(dim_y_raster):
         # # # - - - filt dc component, extract fluctuation with f>0.5hz when fs=50hz - - - # # #
@@ -138,7 +139,7 @@ for FileId in range(FileNum):
         # # # - - - fresh progress bar display - - - # # #
         sys.stdout.write('\r')
         j = (batch_id + 1) / dim_y_raster
-        sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing')
+        sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing' + ': ' + str(FileId + 1) + '/' + str(FileNum))
         ax1['a'].clear();  ax1['a'].imshow(np.swapaxes(batchProj_rgb, 0, 1), vmin=0, vmax=1)
         # plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         plt.pause(0.02)
@@ -160,7 +161,7 @@ for FileId in range(FileNum):
         # ax1['b'].plot(lineProfile_freqNorm[0:length_fft])
         # ax1['b'].set_xticks([0, 4, 8, 12, 16], ["0", "6.25", "12.5", "18.75", "25.0"])  # 50Hz/32
         # ax1['b'].set_xlabel('Frequency (Hz)')
-
+    del DataFold, rawDat
     gc.collect()
 
     # # - - - save image as tiff stack - - - # # #
