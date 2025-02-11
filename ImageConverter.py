@@ -90,17 +90,16 @@ def custom_messagebox():
 # # # - - - - - initialization - - - - - # # #
 sys_ivs800 = True
 Raster_Repeat_num = 32  # use any number of frames (<=32) to compute temporal fluctuation
-multiFolderProcess = False  # if multiple data folders
 
 save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
 save_tif = True  # Set as True if save intensity img as 3D stack .tiff file in the current folder
-
 save_video = False  # (Only for dtype='timelapse') set as True if save Int_view img as .mp4
 display_proc = False  # Set as True if monitor img during converting
 gpu_proc = True
 
+multiFolderProcess = False  # if multiple data folders
 batch_initial_limit = 2.5  # GB, set the file size limit exceeding which enabling batch process
-batchProcPressLev = 1  # lev=1 for laptop when ram is small, lev=0 for pc when ram is large
+batchProcPressLev = 0  # lev=0 for laptop when ram is small, lev=1 for pc when ram is large
 proc_batch = 1
 
 
