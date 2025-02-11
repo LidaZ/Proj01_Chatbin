@@ -12,9 +12,11 @@ import os
 import gc
 import array
 import mmap
-from tkinter import *
+# from tkinter import *
 from tkinter import filedialog
-from tkinter import messagebox
+# from tkinter import messagebox
+import tkinter as tk
+from tkinter import simpledialog
 matplotlib.use("Qt5Agg")
 
 
@@ -55,9 +57,40 @@ def checkFile(path):
     try: os.remove(path)
     except OSError: pass
 
+def close_window():
+    global proc_batch
+    proc_batch = int(E.get())  # Get the value from entry
+    patch.destroy()  # Close the window
 
+def custom_messagebox():
+    dialog = tk.Toplevel()
+    dialog.title("Custom Message Box")
+    dialog.geometry("250x150")
+    dialog.attributes("-topmost", True)
+    # Message Label
+    label = tk.Label(dialog, text='Select data type', wraplength=350)
+    label.pack(pady=20)
+    # Variable to store user response
+    response = tk.BooleanVar()
+
+    def set_response(value):
+        response.set(value)
+        dialog.destroy()
+
+    # Buttons
+    btn_true = tk.Button(dialog, text="Raster", command=lambda: set_response(True), width=10)
+    btn_false = tk.Button(dialog, text="2D / 3D", command=lambda: set_response(False), width=10)
+    btn_true.pack(side="left", padx=20, pady=10)
+    btn_false.pack(side="right", padx=20, pady=10)
+
+    dialog.wait_window()  # Wait until the window is closed
+    return response.get()
+
+
+
+# # # - - - - - initialization - - - - - # # #
 sys_ivs800 = True
-Raster_Repeat_num = 32
+Raster_Repeat_num = 32  # use any number of frames (<=32) to compute temporal fluctuation
 multiFolderProcess = False  # if multiple data folders
 
 save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
@@ -68,20 +101,18 @@ display_proc = False  # Set as True if monitor img during converting
 gpu_proc = True
 
 batch_initial_limit = 2.5  # GB, set the file size limit exceeding which enabling batch process
-batchProcPressLev = 0  # lev=0 for laptop when ram is small, lev=1 for pc when ram is large
+batchProcPressLev = 1  # lev=0 for laptop when ram is small, lev=1 for pc when ram is large
 proc_batch = 1
 
 
-tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True);
-ifRaster = messagebox.askyesno(title=None, message='"Yes" if Raster volume; "No" if standard 2D/3D data', parent=tk)
-tk.destroy()
+root = tk.Tk(); root.withdraw()  # select data type; hide main window.
+ifRaster = custom_messagebox()
+root.destroy()
+# tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True);
+# ifRaster = messagebox.askyesno(title=None, message='"Yes" if Raster volume; "No" if standard 2D/3D data', parent=tk)
+# tk.destroy()
 if ifRaster: rasterRepeat = Raster_Repeat_num
 else: rasterRepeat = 1
-
-
-# tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True);
-# sys_ivs800 = messagebox.askyesno(title=None, message='"Yes" if IVS-800 raw data; "No" if IVS-2000')
-# tk.destroy()
 
 
 if gpu_proc:
@@ -91,7 +122,7 @@ if sys_ivs800:  octRangedB = [-5, 25]
 [dim_y, dim_z, dim_x, FrameRate] = [0, 0, 0, 30];  # aspect_ratio = 1
 # # # - - - - fetch dir path of data file - - - - # # #
 if multiFolderProcess:
-    tk = Tk(); tk.withdraw(); Fold_list = []; DataFold_list = []; extension = ['.dat', '.bin']
+    root = tk.Tk(); root.withdraw(); Fold_list = []; DataFold_list = []; extension = ['.dat', '.bin']
     folderPath = filedialog.askdirectory()
     Fold_list.append(folderPath)
     while len(folderPath) > 0:
@@ -104,10 +135,10 @@ if multiFolderProcess:
             if any(x in n for x in extension):
                 DataFold_list.append( os.path.join(item, n) )
     FileNum = len(DataFold_list)
-
+    root.destroy()
 else:
-    tk = Tk(); tk.withdraw(); DataFold_list = filedialog.askopenfilename(filetypes=[("", "*.bin")], multiple = True)
-    tk.destroy()
+    root = tk.Tk(); root.withdraw(); DataFold_list = filedialog.askopenfilename(filetypes=[("", "*.bin")], multiple = True)
+    root.destroy()
     FileNum = np.shape(DataFold_list)[0]
 
 for FileId in range(FileNum):
@@ -153,8 +184,10 @@ for FileId in range(FileNum):
             proc_batch = 2 ** ( int(np.floor(np.shape(rawDat)[0]/1e9)) - batchProcPressLev).bit_length()  # find the smallest power of 2 greater than file size in GB as batch number
             if dim_y % proc_batch != 0:
                 raise ValueError('Y dimension is ' + str(dim_y) + ', reset process batch number to make dim_y divisible')
-                patch = Tk();  E = Entry(patch);  E.pack();  B = Button(patch, text = "Reset batch number", command = close_window);  B.pack()
-                patch.mainloop();   patch.destroy();  proc_batch = int(entry)
+                patch = tk.Tk();  patch.title("Batch Number Input")
+                E = tk.Entry(patch);  E.pack()
+                B = tk.Button(patch, text="Reset batch number", command=close_window);  B.pack()
+                patch.mainloop()
 
     # # # - - - create empty arrays for log-int image storage and plot instant for display - - - # # #
     if save_video and dataType == 'timelapse':
