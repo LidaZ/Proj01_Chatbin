@@ -48,7 +48,7 @@ computeRasterRepeat = 32
 sys_ivs800 = True
 saveImg = True
 
-multiFolderProcess = False  # if multiple data folders
+multiFolderProcess = True  # if multiple data folders
 hueRange = [0., 1]  # LIV (variance): 0~30 / LIV_norm: 0~1
 if sys_ivs800: octRangedB = [-5, 25]
 else: octRangedB = [0, 50]  # set dynamic range of log OCT signal display
@@ -85,7 +85,6 @@ else:
 for FileId in range(FileNum):
     DataFold = DataFold_list[FileId]
     DataId = os.path.basename(DataFold);   root = os.path.dirname(DataFold)
-    print('Loading data folder: ' + root)
     rawDat = tifffile.imread(DataFold)   # load linear intensity data from stack. Dimension (Y, Z, X)
     # rawDat = tifffile.memmap(DataFold)
     dim_y, dim_z, dim_x = np.shape(rawDat)
@@ -141,7 +140,8 @@ for FileId in range(FileNum):
         # # # - - - fresh progress bar display - - - # # #
         sys.stdout.write('\r')
         j = (batch_id + 1) / dim_y_raster
-        sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing' + ': ' + str(FileId + 1) + '/' + str(FileNum))
+        sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' on batch processing' + ': '
+                         + str(FileId + 1) + '/' + str(FileNum) + ' || DataID: ' + root)
         ax1['a'].clear();  ax1['a'].imshow(np.swapaxes(batchProj_rgb, 0, 1), vmin=0, vmax=1)
         # plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         plt.pause(0.02)

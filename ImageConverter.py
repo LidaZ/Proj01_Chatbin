@@ -97,9 +97,9 @@ save_video = False  # (Only for dtype='timelapse') set as True if save Int_view 
 display_proc = False  # Set as True if monitor img during converting
 gpu_proc = True
 
-multiFolderProcess = False  # if multiple data folders
+multiFolderProcess = True  # if multiple data folders
 batch_initial_limit = 2.5  # GB, set the file size limit exceeding which enabling batch process
-batchProcPressLev = 0  # lev=0 for laptop when ram is small, lev=1 for pc when ram is large
+batchProcPressLev = 1  # lev=0 for laptop when ram is small, lev=1 for pc when ram is large
 proc_batch = 1
 
 
