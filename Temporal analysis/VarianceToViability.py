@@ -111,7 +111,7 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-zSlice = [360, 420]  # manual z slicing range to select depth region for computing viability
+zSlice = [530, 560]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.3
 viabilityThreshold = 0.2
 
@@ -133,8 +133,9 @@ ax1 = fig1.subplot_mosaic("abc;abc;ddd")
 ax1['a'].title.set_text('Drag rectangle to select ROI from dOCT')
 ax1['b'].title.set_text('After manual cropping')
 ax1['c'].title.set_text('Segmentation mask')
-ax1['d'].set_ylabel('Mean Viability');  ax1['d'].set_xlabel('En-face slice along depth (um)')
-ax1['d'].set_ylim([-0.01, 1]);  ax1['d'].set_xlim([0, len(zSliceList)*2]);
+ax1['d'].set_ylabel('Viable fraction');  ax1['d'].set_xlabel('En-face slice at depth (um)')
+ax1['d'].set_ylim([-0.01, 1.02]);  ax1['d'].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
+ax1['d'].set_xlim([0, len(zSliceList)*2]);
 
 # # # draw rectangles at the first and last frames, and the overlapping cubic is the 3D ROI for viability (volume fraction) computation
 frameIndex = zSliceList[0]
