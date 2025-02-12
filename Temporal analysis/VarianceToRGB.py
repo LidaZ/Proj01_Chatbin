@@ -50,8 +50,8 @@ saveImg = True
 
 multiFolderProcess = False  # if multiple data folders
 hueRange = [0., 1]  # LIV (variance): 0~30 / LIV_norm: 0~1
-if sys_ivs800:      octRangedB = [-5, 25]
-else:    octRangedB = [0, 50]  # set dynamic range of log OCT signal display
+if sys_ivs800: octRangedB = [-5, 25]
+else: octRangedB = [0, 50]  # set dynamic range of log OCT signal display
 
 if multiFolderProcess:
     root = tk.Tk(); root.withdraw(); Fold_list = []; DataFold_list = []; extension = ['_IntImg.tif']
@@ -59,22 +59,23 @@ if multiFolderProcess:
     Fold_list.append(folderPath)
     while len(folderPath) > 0:
         folderPath = filedialog.askdirectory(initialdir=os.path.dirname(folderPath))
-        if not folderPath:  break
+        if not folderPath: break
         Fold_list.append(folderPath)
     for item in Fold_list:  # list all files contained in each folder
         fileNameList = os.listdir(item)
         for n in fileNameList:
             if any(x in n for x in extension):
-                DataFold_list.append( os.path.join(item, n) )
+                DataFold_list.append(os.path.join(item, n))
     FileNum = len(DataFold_list)
     root.destroy()
 else:
-    rot = tk.Tk(); tk.withdraw(); tk.attributes("-topmost", True); DataFold_list = filedialog.askopenfilename(filetypes=[("", "*_IntImg.tif")])
-    DataId = os.path.basename(DataFold_list);   root = os.path.dirname(DataFold_list);  rot.destroy()
+    rot = tk.Tk(); rot.withdraw(); rot.attributes("-topmost", True);
+    DataFold_list = filedialog.askopenfilename(filetypes=[("", "*_IntImg.tif")], multiple = True)
+    rot.destroy()
+    # DataId = os.path.basename(DataFold_list);   root = os.path.dirname(DataFold_list);
     FileNum = np.shape(DataFold_list)[0]
-    if '_IntImg' in DataId:  pass
-    else:  raise(ValueError('Select _IntImg.tif file'))
-    print('Loading data folder: ' + root)
+    # if '_IntImg' in DataId:  pass
+    # else:  raise(ValueError('Select _IntImg.tif file'))
 # fs = 50  # Hz, B-scan frequency during acquisition
 # cutoff = 0.5;  order = 1  # (cutoff frequency = 0.5, filtering order = 2), lowpass filter to remove DC component before computing variance
 # colormap = cm.rainbow
@@ -84,7 +85,7 @@ else:
 for FileId in range(FileNum):
     DataFold = DataFold_list[FileId]
     DataId = os.path.basename(DataFold);   root = os.path.dirname(DataFold)
-
+    print('Loading data folder: ' + root)
     rawDat = tifffile.imread(DataFold)   # load linear intensity data from stack. Dimension (Y, Z, X)
     # rawDat = tifffile.memmap(DataFold)
     dim_y, dim_z, dim_x = np.shape(rawDat)
@@ -99,7 +100,7 @@ for FileId in range(FileNum):
     batchProj_sat = np.ones((dim_z, dim_x), 'float32')
     varRawImg = np.zeros((dim_y_raster, dim_z, dim_x), 'float32')
 
-    if 'fig1' in globals():  pass
+    if 'fig1' in globals(): pass
     else:
         figsize_mag = 3
         fig1 = plt.figure(16, figsize=(figsize_mag, dim_z / dim_x * figsize_mag));   plt.clf()
