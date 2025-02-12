@@ -94,6 +94,7 @@ for FileId in range(FileNum):
     elif rasterRepeat == 1:
         dim_y_raster = 1
         rasterRepeat = dim_y
+    else: raise(ValueError('Set rasterRepeat as an integer'))
     # # # - - - initialize variance-to-rgb array, define the display variance range - - - # # #
     batchList = np.linspace(0, dim_y, int(dim_y/rasterRepeat), endpoint=False)
     varRgbImg = np.zeros((dim_y_raster, dim_z, dim_x, 3), 'uint8')
