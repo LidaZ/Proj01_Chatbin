@@ -145,6 +145,7 @@ lastFrameCord = drawRectFromFrame(ax1['a'], fig1, rawDat, frameIndex)
 
 # # # create 3D mask from the two rectangles' coordinates
 overlapRect = findOverlapRect(firstFrameCord, lastFrameCord)
+# overlapRect = findOverlapRect([(2, 1), (2, 237), (254, 1), (254, 237)], [(3, 3), (3, 197), (251, 3), (251, 197)])
 cropCube[:, overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = 1  # dim_z, dim_y, dim_x
 
 # # load linear intensity stack, apply cropCube, denoising using Cellpose v3, apply intThreshold to segment cell regions
@@ -153,7 +154,7 @@ linIntFilePath = root + '/' + DataId[:-15] + '_3d_view.tif'
 rawLivFilePath = root + '/' + DataId[:-15] + '_IntImg_LIV_raw.tif'
 
 
-viabilityList = []
+viabilityList = [];  viaList = [];  totalList = []
 for frameIndex in zSliceList:
     logIntFrame = tifffile.imread(linIntFilePath, key=frameIndex)
     # ax1['a'].clear();  ax1['a'].imshow(logIntFrame, cmap='gray')
@@ -186,7 +187,7 @@ for frameIndex in zSliceList:
         # meanInt_mask = np.nanmean(rawLivFrame_mask_norm)
         # viability = meanInt_mask
         # * * * * * * * BULLSHIT func: compute mean logInt (maybe linInt) from the cells  * * * * * * * * #
-        viabilityList.append(viability)
+        viabilityList.append(viability);  viaList.append(cntLiving);  totalList.append(cntAllPix)
         ax1['d'].scatter((frameIndex-zSliceList[0])*2, viability, color='#6ea6db', marker='o', s=7)  # , np.mean(viabilityList)
     except IndexError:
         pass
@@ -196,4 +197,6 @@ for frameIndex in zSliceList:
     # sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' couting viability over Zstack')
     plt.pause(0.01)
 
-print('Mean viability is: ', str(np.mean(viabilityList)))
+print('Mean en-face fraction (vFrac) is: ', str(np.mean(viabilityList)))
+print('std is: ', str(np.std(viabilityList)))
+print('Volume fraction (vFrac\') is: ', str(np.sum(viaList) / np.sum(totalList)))
