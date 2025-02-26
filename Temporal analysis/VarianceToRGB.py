@@ -22,7 +22,7 @@ matplotlib.use("Qt5Agg")
 """
 Open source project for cell counting system. 
 Generate LIV-encoded images from a 3-D linear intensity volume. 
-Author: Yijie, Lida
+Author: Lida
 Convertion is performed in HSV color space. 
 Hue: Normalized log intensity variance. 
     where normalization is performed as log-intensity-variance divided by 

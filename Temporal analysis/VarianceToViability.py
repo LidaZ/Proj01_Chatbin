@@ -12,7 +12,7 @@ import numpy as np
 # from lowpass_filter import butter_lowpass_filter
 # from MapVarToRGB import num_to_rgb
 # from matplotlib.colors import hsv_to_rgb
-import imagej
+# import imagej
 import tifffile
 import os
 from tkinter import *
@@ -29,7 +29,7 @@ matplotlib.use("Qt5Agg")
 """
 # Open source project for cell counting system. 
 # Compute viability based on the normalized LIV by calculating the volume fraction above and under a given threshold. 
-# Author: Yijie, Lida
+# Author: Lida
 # 
 # Parameters: 
 # zSlice: depth range of Z-stack images for computing viability
