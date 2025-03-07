@@ -97,7 +97,7 @@ for FileId in range(FileNum):
     # # # - - - initialize variance-to-rgb array, define the display variance range - - - # # #
     batchList = np.linspace(0, dim_y, int(dim_y/rasterRepeat), endpoint=False)
     varRgbImg = np.zeros((dim_y_raster, dim_z, dim_x, 3), 'uint8')
-    batchProj_sat = np.ones((dim_z, dim_x), 'float32')
+    # batchProj_sat = np.ones((dim_z, dim_x), 'float32')
     varRawImg = np.zeros((dim_y_raster, dim_z, dim_x), 'float32')
 
     if 'fig1' in globals(): pass
@@ -133,7 +133,7 @@ for FileId in range(FileNum):
 
         # # # - - - convert to hue color space - - - # # #
         batchProj_rgb = hsv_to_rgb(
-            np.transpose([batchProj_varHue, batchProj_sat, batchProj_valMax_clip]))  # [varProj_hue, varProj_sat/_val, varProj_val]
+            np.transpose([batchProj_varHue, np.ones_like(batchProj_varHue), batchProj_valMax_clip]))  # [varProj_hue, varProj_sat/_val, varProj_val]
         varRgbImg[batch_id, :, :, :] = np.swapaxes(batchProj_rgb, 0, 1) * 255
 
         varRawImg[batch_id, :, :] = batchProj_var_norm
