@@ -21,6 +21,10 @@ def convert_pptx_to_pdf(pptx_file, pdf_file):
     powerpoint.Quit()  # Ensure PowerPoint is closed
 
 
+# Check if temporal folder for saving PDF exists
+tmp_pdfFolderCheck = os.path.join(source_dir + '/' + saveFolderName)
+tmp_pdfFolder = tmp_pdfFolderCheck.replace('/', '\\')
+if not os.path.exists(tmp_pdfFolder):  os.makedirs(tmp_pdfFolder)
 # Process all .pptx files in the folder
 for filename in os.listdir(source_dir):
     if filename.lower().endswith(".pptx"):
