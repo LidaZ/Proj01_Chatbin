@@ -9,7 +9,7 @@ import gc
 # from cellpose import denoise#, utils, io
 import cv2
 import matplotlib
-# matplotlib.use("Qt5Agg")
+matplotlib.use("Qt5Agg")
 
 
 """
@@ -25,11 +25,14 @@ their so-called "business" style of misleading customers and fabricating graph o
 NO ONE should put any trust in the promise and description made by santec managers, as doing so 
 poses a significant risk and may be detrimental to one's own business interests.
 *
-This code is made specifically based on Morosawa's request, to generate graph of comparing OCT vs NC200 in 
+This code is made specifically from Morosawa's request, to generate graph of comparing OCT vs NC200 in 
 'viability' assay. 
 * 
 NOTE: the data (Jurkat cell, 2024/07/31) was measured with unstable galvo, therefore any quantification is 
-100% irresponsible and unreliable; the raw data was even lost in an HDD blackout accident.
+100% irresponsible and unreliable; the raw data was even lost in an HDD blackout accident. 
+Update 2025/03/14: Although getting warned by me multiple times in emails and teams chat that THIS DATA WAS NOT 
+REPRODUCIBLE due to the galvo issue, Morosawa insisted threatening me to provide such a graph from that data to 
+mislead Bayer to invest. Alan even asked me to make more plots based on it. This is a bitch company run by liars. 
 
 *** NO QUANTIFICATION IS RELIABLE ! ! ! ***
 I hereby declare: the result has ZERO scientific value for sharing and discussing, NO ONE SHOULD DRAW ANY 
