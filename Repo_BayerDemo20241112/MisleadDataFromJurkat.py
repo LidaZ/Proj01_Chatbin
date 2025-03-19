@@ -49,8 +49,8 @@ of fabricating, spreading, and treating using any FAKE/NON-REPRODUCIBLE DATA.
 
 
 
-dead_threshold = 0.27
-live_threshold = 0.2
+dead_threshold_0 = 0.27
+live_threshold_0 = 0.2
 
 def count_red_green_pixels(image_path, hue_threshold):
     img = cv2.imread(image_path)
@@ -67,78 +67,90 @@ def count_red_green_pixels(image_path, hue_threshold):
     return green_percentage * 100
 
 
-control_0 = r"C:\Users\lzhu\Desktop\tmp\control0.png"
-control_1 = r"C:\Users\lzhu\Desktop\tmp\control1.png"
-control_2 = r"C:\Users\lzhu\Desktop\tmp\control2.png"
-control_3 = r"C:\Users\lzhu\Desktop\tmp\control3.png"
-control_4 = r"C:\Users\lzhu\Desktop\tmp\control4.png"
-control_18 = r"C:\Users\lzhu\Desktop\tmp\control18.png"
-control_19 = r"C:\Users\lzhu\Desktop\tmp\control19.png"
-control_20 = r"C:\Users\lzhu\Desktop\tmp\control20.png"
-control_21 = r"C:\Users\lzhu\Desktop\tmp\control21.png"
-control_22 = r"C:\Users\lzhu\Desktop\tmp\control22.png"
+control_0 = r"C:\Users\withi\Desktop\tmp\control0.png"
+control_1 = r"C:\Users\withi\Desktop\tmp\control1.png"
+control_2 = r"C:\Users\withi\Desktop\tmp\control2.png"
+control_3 = r"C:\Users\withi\Desktop\tmp\control3.png"
+control_4 = r"C:\Users\withi\Desktop\tmp\control4.png"
+control_18 = r"C:\Users\withi\Desktop\tmp\control18.png"
+control_19 = r"C:\Users\withi\Desktop\tmp\control19.png"
+control_20 = r"C:\Users\withi\Desktop\tmp\control20.png"
+control_21 = r"C:\Users\withi\Desktop\tmp\control21.png"
+control_22 = r"C:\Users\withi\Desktop\tmp\control22.png"
 
-oxydol_0 = r"C:\Users\lzhu\Desktop\tmp\oxydol0.png"
-oxydol_1 = r"C:\Users\lzhu\Desktop\tmp\oxydol1.png"
-oxydol_2 = r"C:\Users\lzhu\Desktop\tmp\oxydol2.png"
-oxydol_3 = r"C:\Users\lzhu\Desktop\tmp\oxydol3.png"
-oxydol_4 = r"C:\Users\lzhu\Desktop\tmp\oxydol4.png"
-oxydol_18 = r"C:\Users\lzhu\Desktop\tmp\oxydol18.png"
-oxydol_19 = r"C:\Users\lzhu\Desktop\tmp\oxydol19.png"
-oxydol_20 = r"C:\Users\lzhu\Desktop\tmp\oxydol20.png"
-oxydol_21 = r"C:\Users\lzhu\Desktop\tmp\oxydol21.png"
-oxydol_22 = r"C:\Users\lzhu\Desktop\tmp\oxydol22.png"
+oxydol_0 = r"C:\Users\withi\Desktop\tmp\oxydol0.png"
+oxydol_1 = r"C:\Users\withi\Desktop\tmp\oxydol1.png"
+oxydol_2 = r"C:\Users\withi\Desktop\tmp\oxydol2.png"
+oxydol_3 = r"C:\Users\withi\Desktop\tmp\oxydol3.png"
+oxydol_4 = r"C:\Users\withi\Desktop\tmp\oxydol4.png"
+oxydol_18 = r"C:\Users\withi\Desktop\tmp\oxydol18.png"
+oxydol_19 = r"C:\Users\withi\Desktop\tmp\oxydol19.png"
+oxydol_20 = r"C:\Users\withi\Desktop\tmp\oxydol20.png"
+oxydol_21 = r"C:\Users\withi\Desktop\tmp\oxydol21.png"
+oxydol_22 = r"C:\Users\withi\Desktop\tmp\oxydol22.png"
 
 control = [control_0,control_1,control_2,control_3,control_4,control_18,control_19,control_20,control_21,control_22]
 oxydol = [oxydol_0,oxydol_1,oxydol_2,oxydol_3,oxydol_4,oxydol_18,oxydol_19,oxydol_20,oxydol_21,oxydol_22]
 
-control[0] = count_red_green_pixels(control_0, live_threshold)
-control[1] = count_red_green_pixels(control_1, live_threshold)
-control[2] = count_red_green_pixels(control_2, live_threshold)
-control[3] = count_red_green_pixels(control_3, live_threshold)
-control[4] = count_red_green_pixels(control_4, live_threshold)
-control[5] = count_red_green_pixels(control_18, live_threshold)
-control[6] = count_red_green_pixels(control_19, live_threshold)
-control[7] = count_red_green_pixels(control_20, live_threshold)
-control[8] = count_red_green_pixels(control_21, live_threshold)
-control[9] = count_red_green_pixels(control_22, live_threshold)
+control_rec = np.ones([11, 10])
+oxydol_rec = np.ones([11, 10])
+for loop in range(11):
+    dead_threshold = dead_threshold_0 * (1 + (loop-5)/50)
+    live_threshold = live_threshold_0 * (1 + (loop - 5) / 50)
 
-oxydol[0] = count_red_green_pixels(oxydol_0, dead_threshold)
-oxydol[1] = count_red_green_pixels(oxydol_1, dead_threshold)
-oxydol[2] = count_red_green_pixels(oxydol_2, dead_threshold)
-oxydol[3] = count_red_green_pixels(oxydol_3, dead_threshold)
-oxydol[4] = count_red_green_pixels(oxydol_4, dead_threshold)
-oxydol[5] = count_red_green_pixels(oxydol_18, dead_threshold)
-oxydol[6] = count_red_green_pixels(oxydol_19, dead_threshold)
-oxydol[7] = count_red_green_pixels(oxydol_20, dead_threshold)
-oxydol[8] = count_red_green_pixels(oxydol_21, dead_threshold)
-oxydol[9] = count_red_green_pixels(oxydol_22, dead_threshold)
+    control[0] = count_red_green_pixels(control_0, live_threshold)
+    control[1] = count_red_green_pixels(control_1, live_threshold)
+    control[2] = count_red_green_pixels(control_2, live_threshold)
+    control[3] = count_red_green_pixels(control_3, live_threshold)
+    control[4] = count_red_green_pixels(control_4, live_threshold)
+    control[5] = count_red_green_pixels(control_18, live_threshold)
+    control[6] = count_red_green_pixels(control_19, live_threshold)
+    control[7] = count_red_green_pixels(control_20, live_threshold)
+    control[8] = count_red_green_pixels(control_21, live_threshold)
+    control[9] = count_red_green_pixels(control_22, live_threshold)
 
-print(f"Live: {control}")
-print(f"Dead: {oxydol}")
+    oxydol[0] = count_red_green_pixels(oxydol_0, live_threshold)
+    oxydol[1] = count_red_green_pixels(oxydol_1, live_threshold)
+    oxydol[2] = count_red_green_pixels(oxydol_2, live_threshold)
+    oxydol[3] = count_red_green_pixels(oxydol_3, live_threshold)
+    oxydol[4] = count_red_green_pixels(oxydol_4, live_threshold)
+    oxydol[5] = count_red_green_pixels(oxydol_18, dead_threshold)
+    oxydol[6] = count_red_green_pixels(oxydol_19, dead_threshold)
+    oxydol[7] = count_red_green_pixels(oxydol_20, dead_threshold)
+    oxydol[8] = count_red_green_pixels(oxydol_21, dead_threshold)
+    oxydol[9] = count_red_green_pixels(oxydol_22, dead_threshold)
 
-###
-control_nc = [91.9, 92.2, 80.1, 90.8, 90.1, 83.5, 78.9, 75.6, 81.8, 79.1]
-oxydol_nc = [90.3, 70, 55.6, 47.8, 50, 3.2, 3.4, 2.4, 3.8, 3.4]
-###
+    # print(f"Live: {control}")
+    # print(f"Dead: {oxydol}")
+    #
+    # ###
+    # control_nc = [91.9, 92.2, 80.1, 90.8, 90.1, 83.5, 78.9, 75.6, 81.8, 79.1]
+    # oxydol_nc = [90.3, 70, 55.6, 47.8, 50, 3.2, 3.4, 2.4, 3.8, 3.4]
+    # ###
+    #
+    # fig1 = plt.figure(10, figsize=(10, 6));  plt.clf()
+    # ax = fig1.subplot_mosaic("a")
+    #
+    # x = np.linspace(0, 9, 10)
+    # ax_a1 = ax['a'].plot(x[0:5], control[0:5], color='#69D46C', marker='*', linestyle='--', markersize=10)
+    # ax_a2 = ax['a'].plot(x[5:10], control[5:10], color='#69D46C', marker='*', linestyle='--', markersize=10)
+    # ax_b1 = ax['a'].plot(x[0:5], oxydol[0:5], color='#FFA8BA', marker='*', linestyle='--', markersize=10)
+    # ax_b2 = ax['a'].plot(x[5:10], oxydol[5:10], color='#FFA8BA', marker='*', linestyle='--', markersize=10)
+    #
+    #
+    # ax_c1 = ax['a'].plot(x[0:5], control_nc[0:5], color='#24B029', marker='o', linestyle='-', markersize=10)
+    # ax_c2 = ax['a'].plot(x[5:10], control_nc[5:10], color='#24B029', marker='o', linestyle='-', markersize=10)
+    # ax_c1 = ax['a'].plot(x[0:5], oxydol_nc[0:5], color='#FF6E8B', marker='o', linestyle='-', markersize=10)
+    # ax_c2 = ax['a'].plot(x[5:10], oxydol_nc[5:10], color='#FF6E8B', marker='o', linestyle='-', markersize=10)
+    #
+    #
+    # ax['a'].set_yticks(np.arange(0, 110, 10))
+    # ax['a'].set_ylim([-0.01, 100])
+    # ax['a'].set_xticks([0, 1, 2, 3, 4, 5,6,7,8,9],["0", "1", "2", "3", "4","18","19","20","21","22"])
+    # ax['a'].yaxis.grid()
 
-fig1 = plt.figure(10, figsize=(10, 6));  plt.clf()
-ax = fig1.subplot_mosaic("a")
+    control_rec[loop, :] = control
+    oxydol_rec[loop, :] = oxydol
 
-x = np.linspace(0, 9, 10)
-ax_a1 = ax['a'].plot(x[0:5], control[0:5], color='#69D46C', marker='*', linestyle='--', markersize=10)
-ax_a2 = ax['a'].plot(x[5:10], control[5:10], color='#69D46C', marker='*', linestyle='--', markersize=10)
-ax_b1 = ax['a'].plot(x[0:5], oxydol[0:5], color='#FFA8BA', marker='*', linestyle='--', markersize=10)
-ax_b2 = ax['a'].plot(x[5:10], oxydol[5:10], color='#FFA8BA', marker='*', linestyle='--', markersize=10)
-
-
-ax_c1 = ax['a'].plot(x[0:5], control_nc[0:5], color='#24B029', marker='o', linestyle='-', markersize=10)
-ax_c2 = ax['a'].plot(x[5:10], control_nc[5:10], color='#24B029', marker='o', linestyle='-', markersize=10)
-ax_c1 = ax['a'].plot(x[0:5], oxydol_nc[0:5], color='#FF6E8B', marker='o', linestyle='-', markersize=10)
-ax_c2 = ax['a'].plot(x[5:10], oxydol_nc[5:10], color='#FF6E8B', marker='o', linestyle='-', markersize=10)
-
-
-ax['a'].set_yticks(np.arange(0, 110, 10))
-ax['a'].set_ylim([-0.01, 100])
-ax['a'].set_xticks([0, 1, 2, 3, 4, 5,6,7,8,9],["0", "1", "2", "3", "4","18","19","20","21","22"])
-ax['a'].yaxis.grid()
+print(np.std(control_rec, axis=0))
+print(np.std(oxydol_rec, axis=0))
