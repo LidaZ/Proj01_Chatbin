@@ -1,5 +1,5 @@
-Bscan_tilt = -0.48
-Y_tilt = 16.7  
+Bscan_tilt = -0.0
+Y_tilt = -4.45
 
 if (nImages>0) 
 	while (nImages>0) { 
@@ -22,7 +22,7 @@ run("Reslice [/]...", "output=1.000 start=Top rotate avoid");
 selectImage(title);
 close();
 title=getTitle();
-run("Scale...", "x=1.0 y=2 z=1.0 width=256 height=256 depth=700 interpolation=Bilinear average process create");
+run("Scale...", "x=1.0 y=1 z=1.0 width=256 height=256 depth=700 interpolation=Bilinear average process create");
 selectImage(title);
 close();
 saveAs("Tiff", logIntFilePath);
@@ -42,7 +42,7 @@ run("Reslice [/]...", "output=1.000 start=Top rotate avoid");
 selectImage(title);
 close();
 title=getTitle();
-run("Scale...", "x=1.0 y=2 z=1.0 width=256 height=256 depth=700 interpolation=Bilinear average process create");
+run("Scale...", "x=1.0 y=1 z=1.0 width=256 height=256 depth=700 interpolation=Bilinear average process create");
 selectImage(title);
 close();
 saveAs("Tiff", LivFilePath);
@@ -62,7 +62,7 @@ run("Reslice [/]...", "output=1.000 start=Top rotate avoid");
 selectImage(title);
 close();
 title=getTitle();
-run("Scale...", "x=1.0 y=2 z=1.0 width=256 height=256 depth=700 interpolation=Bilinear average process create");
+run("Scale...", "x=1.0 y=1 z=1.0 width=256 height=256 depth=700 interpolation=Bilinear average process create");
 selectImage(title);
 close();
 saveAs("Tiff", rawLivFilePath);

@@ -89,7 +89,7 @@ def custom_messagebox():
 
 # # # - - - - - initialization - - - - - # # #
 sys_ivs800 = True
-Raster_Repeat_num = 32  # use any number of frames (<=32) to compute temporal fluctuation
+Raster_Repeat_num = 16  # use any number of frames (<=32) to compute temporal fluctuation
 
 save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
 save_tif = True  # Set as True if save intensity img as 3D stack .tiff file in the current folder

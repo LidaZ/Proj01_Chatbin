@@ -67,36 +67,46 @@ def count_red_green_pixels(image_path, hue_threshold):
     return green_percentage * 100
 
 
-control_0 = r"C:\Users\withi\Desktop\tmp\control0.png"
-control_1 = r"C:\Users\withi\Desktop\tmp\control1.png"
-control_2 = r"C:\Users\withi\Desktop\tmp\control2.png"
-control_3 = r"C:\Users\withi\Desktop\tmp\control3.png"
-control_4 = r"C:\Users\withi\Desktop\tmp\control4.png"
-control_18 = r"C:\Users\withi\Desktop\tmp\control18.png"
-control_19 = r"C:\Users\withi\Desktop\tmp\control19.png"
-control_20 = r"C:\Users\withi\Desktop\tmp\control20.png"
-control_21 = r"C:\Users\withi\Desktop\tmp\control21.png"
-control_22 = r"C:\Users\withi\Desktop\tmp\control22.png"
+control_0 = r"C:\Users\lzhu\Desktop\tmp\control0.png"
+control_1 = r"C:\Users\lzhu\Desktop\tmp\control1.png"
+control_2 = r"C:\Users\lzhu\Desktop\tmp\control2.png"
+control_3 = r"C:\Users\lzhu\Desktop\tmp\control3.png"
+control_4 = r"C:\Users\lzhu\Desktop\tmp\control4.png"
+control_18 = r"C:\Users\lzhu\Desktop\tmp\control18.png"
+control_19 = r"C:\Users\lzhu\Desktop\tmp\control19.png"
+control_20 = r"C:\Users\lzhu\Desktop\tmp\control20.png"
+control_21 = r"C:\Users\lzhu\Desktop\tmp\control21.png"
+control_22 = r"C:\Users\lzhu\Desktop\tmp\control22.png"
 
-oxydol_0 = r"C:\Users\withi\Desktop\tmp\oxydol0.png"
-oxydol_1 = r"C:\Users\withi\Desktop\tmp\oxydol1.png"
-oxydol_2 = r"C:\Users\withi\Desktop\tmp\oxydol2.png"
-oxydol_3 = r"C:\Users\withi\Desktop\tmp\oxydol3.png"
-oxydol_4 = r"C:\Users\withi\Desktop\tmp\oxydol4.png"
-oxydol_18 = r"C:\Users\withi\Desktop\tmp\oxydol18.png"
-oxydol_19 = r"C:\Users\withi\Desktop\tmp\oxydol19.png"
-oxydol_20 = r"C:\Users\withi\Desktop\tmp\oxydol20.png"
-oxydol_21 = r"C:\Users\withi\Desktop\tmp\oxydol21.png"
-oxydol_22 = r"C:\Users\withi\Desktop\tmp\oxydol22.png"
+oxydol_0 = r"C:\Users\lzhu\Desktop\tmp\oxydol0.png"
+oxydol_1 = r"C:\Users\lzhu\Desktop\tmp\oxydol1.png"
+oxydol_2 = r"C:\Users\lzhu\Desktop\tmp\oxydol2.png"
+oxydol_3 = r"C:\Users\lzhu\Desktop\tmp\oxydol3.png"
+oxydol_4 = r"C:\Users\lzhu\Desktop\tmp\oxydol4.png"
+oxydol_18 = r"C:\Users\lzhu\Desktop\tmp\oxydol18.png"
+oxydol_19 = r"C:\Users\lzhu\Desktop\tmp\oxydol19.png"
+oxydol_20 = r"C:\Users\lzhu\Desktop\tmp\oxydol20.png"
+oxydol_21 = r"C:\Users\lzhu\Desktop\tmp\oxydol21.png"
+oxydol_22 = r"C:\Users\lzhu\Desktop\tmp\oxydol22.png"
 
 control = [control_0,control_1,control_2,control_3,control_4,control_18,control_19,control_20,control_21,control_22]
 oxydol = [oxydol_0,oxydol_1,oxydol_2,oxydol_3,oxydol_4,oxydol_18,oxydol_19,oxydol_20,oxydol_21,oxydol_22]
 
-control_rec = np.ones([11, 10])
-oxydol_rec = np.ones([11, 10])
-for loop in range(11):
-    dead_threshold = dead_threshold_0 * (1 + (loop-5)/50)
-    live_threshold = live_threshold_0 * (1 + (loop - 5) / 50)
+
+
+mu, sigma = dead_threshold_0, dead_threshold_0*0.1
+dead_threshold_list = np.random.normal(mu, sigma, 100)
+mu, sigma = live_threshold_0, live_threshold_0*0.1
+live_threshold_list = np.random.normal(mu, sigma, 100)
+control_rec = np.ones([len(live_threshold_list), 10])
+oxydol_rec = np.ones([len(dead_threshold_list), 10])
+# control_rec = np.ones([11, 10])
+# oxydol_rec = np.ones([11, 10])
+for loop in range(len(live_threshold_list)):
+    dead_threshold = dead_threshold_list[loop]
+    live_threshold = live_threshold_list[loop]
+    # dead_threshold = dead_threshold_0 * (1 + (loop-5)/50)
+    # live_threshold = live_threshold_0 * (1 + (loop - 5) / 50)
 
     control[0] = count_red_green_pixels(control_0, live_threshold)
     control[1] = count_red_green_pixels(control_1, live_threshold)
@@ -151,6 +161,9 @@ for loop in range(11):
 
     control_rec[loop, :] = control
     oxydol_rec[loop, :] = oxydol
+    # print(loop)
 
 print(np.std(control_rec, axis=0))
 print(np.std(oxydol_rec, axis=0))
+# print(np.max(control_rec, axis=0) - np.min(control_rec, axis=0))
+# print(np.max(oxydol_rec, axis=0) - np.min(oxydol_rec, axis=0))
