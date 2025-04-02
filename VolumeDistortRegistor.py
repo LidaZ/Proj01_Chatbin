@@ -104,7 +104,8 @@ def volumeRegistor(volume_path, offSetMap, picker):
 # # # =========================
 
 # # # Initialize Tkinter for file selection
-tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stack_file_path = filedialog.askopenfilename(filetypes=[("", "*view.tif")])
+tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True)
+stack_file_path = filedialog.askopenfilename(filetypes=[("", "*view.tif")])
 tk.destroy()
 # # # Load image
 print('Loading fileID: ' + stack_file_path)
@@ -128,21 +129,21 @@ x_yz_fitted, y_yz_fitted, yz_poly = picker.polyContour(y_plane_contour_coords, d
 
 
 # # # Make offset map for registration
-RegisterVol = np.empty_like(raw_data)
 xIndex = np.linspace(0, dim_x-1, dim_x); xMap = xz_poly(xIndex)
-yIndex = np.linspace(0, dim_y-1, dim_y); yMap = yz_poly(yIndex) #; yMap = yMap - yMap[0]
+yIndex = np.linspace(0, dim_y-1, dim_y); yMap = yz_poly(yIndex)
 xMap2d = np.tile(xMap - xMap[0], (dim_y, 1))
 yMap2d = np.tile((yMap - yMap[0]), (dim_x, 1)).T
-
 offSetMap = np.trunc(xMap2d + yMap2d).astype(np.int16) * -1
 
+# # # # =========================
+# # # # register raw_data volume according to offsetMap
+# RegisterVol = picker.fast_roll_along_z(raw_data, offSetMap)
+# # # # # # Check if offset map coordinates with ortho-slices
+# # # # ax1["a"].clear(); ax1["a"].imshow(RegisterVol[124, ...], cmap='gray'); ax1["a"].title.set_text("After X-Z registration")
+# # # # ax1["b"].clear(); ax1["b"].imshow(RegisterVol[..., 245].T, cmap='gray'); ax1["b"].title.set_text("After Y-Z registration")
+# # # # =========================
 
-# # # register raw_data volume according to offsetMap
-RegisterVol = picker.fast_roll_along_z(raw_data, offSetMap)
-# # # # # Check if offset map coordinates with ortho-slices
-# ax1["a"].clear(); ax1["a"].imshow(RegisterVol[124, ...], cmap='gray'); ax1["a"].title.set_text("After X-Z registration")
-# ax1["b"].clear(); ax1["b"].imshow(RegisterVol[..., 245].T, cmap='gray'); ax1["b"].title.set_text("After Y-Z registration")
-
+del raw_data
 
 # # # overwrite the original .tif files with registered volume
 DataId = os.path.basename(stack_file_path)
