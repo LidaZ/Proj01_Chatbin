@@ -75,7 +75,7 @@ class PickContour:
 
     def fast_roll_along_z(self, volume, offSet_map):
         """ Efficiently rolls a 3D array A along the dim_z axis based on offSet_map. """
-        dim_y, dim_z, dim_x = volume.shape
+        dim_y, dim_z, dim_x = volume.shape[0:3]
         assert offSet_map.shape == (dim_y, dim_x), "offSetMap shape mismatch with input volume shape"
 
         # # # # Using numpy.roll to register data volume with estimated offsetMap
@@ -95,8 +95,12 @@ class PickContour:
 
 def volumeRegistor(volume_path, offSetMap, picker):
     volume = tifffile.imread(volume_path)
-    registered_volume = picker.fast_roll_along_z(volume, offSetMap)
-    tifffile.imwrite(volume_path, registered_volume)
+    try:
+        registered_volume = picker.fast_roll_along_z(volume, offSetMap)
+        tifffile.imwrite(volume_path, registered_volume)
+        print(f"Registration complete, ID: " + str(volume_path))
+    except ValueError:
+        raise(ValueError(f"Shape not match, ID: " + str(volume_path)))
 
 
 # # # =========================
@@ -149,6 +153,6 @@ del raw_data
 DataId = os.path.basename(stack_file_path)
 root = os.path.dirname(stack_file_path)
 
-volumeRegistor((root + '/' + DataId[:-12] + '_3d_view.tif'), offSetMap, picker)
-volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_LIV.tif'), offSetMap, picker)
 volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_LIV_raw.tif'), offSetMap, picker)
+volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_LIV.tif'), offSetMap, picker)
+volumeRegistor((root + '/' + DataId[:-12] + '_3d_view.tif'), offSetMap, picker)
