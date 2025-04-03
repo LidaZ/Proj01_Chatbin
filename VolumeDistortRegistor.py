@@ -71,6 +71,7 @@ class PickContour:
 
         ax.scatter(x, y, color='red', label="Contour Points")  # Original points
         ax.plot(x_smooth, y_smooth, 'b-', label="Fitted Curve")  # Fitted curve
+        plt.pause(0.01)
         return x_smooth, y_smooth, poly
 
     def fast_roll_along_z(self, volume, offSet_map):
