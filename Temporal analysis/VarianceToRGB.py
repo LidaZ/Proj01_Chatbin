@@ -50,7 +50,7 @@ saveImg = True
 
 multiFolderProcess = True  # if multiple data folders
 hueRange = [0., 1]  # LIV (variance): 0~30 / LIV_norm: 0~1
-if sys_ivs800: octRangedB = [-5, 20]
+if sys_ivs800: octRangedB = [-2, 10]  # [-5, 20]
 else: octRangedB = [0, 50]  # set dynamic range of log OCT signal display
 
 if multiFolderProcess:
