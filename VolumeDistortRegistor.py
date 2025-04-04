@@ -95,6 +95,7 @@ class PickContour:
 
 
 def volumeRegistor(volume_path, offSetMap, picker):
+    """ Apply the estimated offSetMap to register given 3D volume. """
     volume = tifffile.imread(volume_path)
     try:
         registered_volume = picker.fast_roll_along_z(volume, offSetMap)
@@ -122,10 +123,9 @@ fig1 = plt.figure(10, figsize=(7, 7));  plt.clf()
 ax1 = fig1.subplot_mosaic("ab")
 
 
-# # # Select contour in X-Z plane
+# # # Select contour in X-Z plane; then polynomial fitting to obtain the functions of contour and draw on image.
 x_plane_contour_coords = picker.return_coord_in_frame(
     ax1["a"], fig1, raw_data[round(dim_y/2), ...], "5 Clicks to contour \n X-Z distortion")
-# Polynomial fitting to obtain the functions of contour and draw on image.
 x_xz_fitted, y_xz_fitted, xz_poly = picker.polyContour(x_plane_contour_coords, dim_y, ax1["a"])
 # # # Select contour in Y-Z plane
 y_plane_contour_coords = picker.return_coord_in_frame(
@@ -141,7 +141,7 @@ yMap2d = np.tile((yMap - yMap[0]), (dim_x, 1)).T
 offSetMap = np.trunc(xMap2d + yMap2d).astype(np.int16) * -1
 
 # # # # =========================
-# # # # register raw_data volume according to offsetMap
+# # # # Example: register raw_data volume by using offsetMap
 # RegisterVol = picker.fast_roll_along_z(raw_data, offSetMap)
 # # # # # # Check if offset map coordinates with ortho-slices
 # # # # ax1["a"].clear(); ax1["a"].imshow(RegisterVol[124, ...], cmap='gray'); ax1["a"].title.set_text("After X-Z registration")
