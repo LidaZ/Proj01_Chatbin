@@ -23,7 +23,7 @@ class PickContour:
         self.pick_stack = []
         self.select_not_done = True
         self.select_count = 0
-        self.polyDegree = 2
+        self.polyDegree = 3
 
     def on_press(self, event):
         """Handle mouse click events for point selection."""
@@ -119,7 +119,7 @@ raw_data = tifffile.imread(stack_file_path)
 dim_y, dim_z, dim_x = raw_data.shape[0:3]
 # # # Initialize display window and picker
 picker = PickContour(contour_points=5)
-fig1 = plt.figure(10, figsize=(7, 7));  plt.clf()
+fig1 = plt.figure(10, figsize=(9, 9));  plt.clf()
 ax1 = fig1.subplot_mosaic("ab")
 
 
