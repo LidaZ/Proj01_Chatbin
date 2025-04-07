@@ -111,16 +111,20 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-zSlice = [530, 560]  # manual z slicing range to select depth region for computing viability
+zSlice = [246, 247]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.3
 viabilityThreshold = 0.2
+VolFlip = False
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_LIV.tif")])
 DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath);  tk.destroy()
 print('Loading fileID: ' + stackFilePath)
 
 # # # # - - - read size of tiff stack - - - # # #
-rawDat = tifffile.imread(stackFilePath)   # load linear intensity data from stack. Dimension (Y, Z, X)
+if VolFlip:  rawDat = tifffile.imread(stackFilePath)
+else:
+    memmap_rawDat = tifffile.memmap(stackFilePath, mode='r')
+    rawDat = np.swapaxes(memmap_rawDat, 0, 1)   # load linear intensity data from stack. Dimension (Y, Z, X)
 dim_z, dim_y, dim_x = np.shape(rawDat)[0:3]  # [dim_y, dim_z, dim_x] original dimensions before applying AutoRotateMacro.ijm
 cropCube = np.zeros([dim_z, dim_y, dim_x], dtype=int)
 model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
@@ -155,8 +159,13 @@ rawLivFilePath = root + '/' + DataId[:-15] + '_IntImg_LIV_raw.tif'
 
 
 viabilityList = [];  viaList = [];  totalList = []
+if VolFlip is not True:
+    memmap_logInt = tifffile.memmap(linIntFilePath, mode='r')
+    memmap_rawLiv = tifffile.memmap(rawLivFilePath, mode='r')
+
 for frameIndex in zSliceList:
-    logIntFrame = tifffile.imread(linIntFilePath, key=frameIndex)
+    if VolFlip:  logIntFrame = tifffile.imread(linIntFilePath, key=frameIndex)
+    else:  logIntFrame = memmap_logInt[:, frameIndex, :]
     # ax1['a'].clear();  ax1['a'].imshow(logIntFrame, cmap='gray')
     ax1['a'].clear();  ax1['a'].imshow(rawDat[frameIndex, ...])  # cropIntFrame = logIntFrame.copy() * cropCube[frameIndex, ...]
     cropIntFrame = logIntFrame * cropCube[frameIndex, ...]  # margin zeros should not be passed to cellpose, otherwise indexing error will raise
@@ -172,7 +181,8 @@ for frameIndex in zSliceList:
         ax1['c'].clear();  ax1['c'].imshow(frameMask, cmap='gray')
 
         # # # apply frameMask to rawLIV en-face image
-        rawLivFrame = tifffile.imread(rawLivFilePath, key=frameIndex)
+        if VolFlip:  rawLivFrame = tifffile.imread(rawLivFilePath, key=frameIndex)
+        else:  rawLivFrame = memmap_rawLiv[:, frameIndex, :]
         rawLivFrame_mask = rawLivFrame * frameMask
         rawLivFrame_mask[rawLivFrame_mask == 0] = np.nan
         # ax1['c'].clear();  ax1['c'].imshow(rawLivFrame_mask, cmap='gray')
