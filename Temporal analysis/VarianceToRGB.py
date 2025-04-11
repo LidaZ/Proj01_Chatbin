@@ -124,7 +124,7 @@ for FileId in range(FileNum):
 
         # # # - - - compute variance/std/freq at each pix > Hue - - - # # #
         batchProj_var = np.var(rawDat_batch_log, axis=0)  # LIV: linear > log > variance. typical range: (0, 146) > (0, 30)
-        batchProj_var_norm = batchProj_var / batchProj_valMax  # typical range: (0, 1.3).
+        batchProj_var_norm = batchProj_var / batchProj_valMax  # Should be batchProj_valMax**2, so that it becomes normalize because dB^2 / dB^2  # typical range: (0, 1.3).
         # batchProj_var = np.var(rawDat_batch_log / (np.tile(batchProj_valMax, (32, 1, 1))), axis=0)
         # batchProj_var_norm = batchProj_var
         # # #

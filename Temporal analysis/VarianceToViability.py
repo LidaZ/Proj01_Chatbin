@@ -111,9 +111,9 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-zSlice = [246, 247]  # manual z slicing range to select depth region for computing viability
-intThreshold = 0.3
-viabilityThreshold = 0.2
+zSlice = [320, 340]  # manual z slicing range to select depth region for computing viability
+intThreshold = 0.5
+viabilityThreshold = 0.042
 VolFlip = False
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_LIV.tif")])
