@@ -4,11 +4,16 @@ Proj01_Chatbin
 Code repository for project 01 cell count OCT.
 
 ## Asset list:
-### ImageConversion 
+### Image conversion 
 - Used code: ImageConverter.py
 - Convert raw data (logarithmic amplitude of OCT signal after Fourier transform, both from IVS-200-HR and IVS-800) to .tif image stacks. 
 
 >Note: Code will be upgraded after adding function to convert raw spectrum data to image stacks.  
+
+### Volume distortion registration
+- Used code: VolumeDistortRegistor.py
+- Manually register all types of 3D data (*_3d_view.tif, *_IntImg_LIV.tif, *_IntImg_LIV_raw.tif) to flatten the surface. Five (can be edited) markers are manually selected to draw a contour of the surface, where a polynomial fitting (degree of 3, can be edited) is applied. 
+- How to use: run, select a *_3d_view.tif, select 5 markers of the surface contour (XZ), then select another 5 markers to contour (YZ). 
 
 ### Temporal analysis
 - Used code: \Temporal analysis\VarianceToRGB.py; \Temporal analysis\VarianceToViability.py
