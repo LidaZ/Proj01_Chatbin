@@ -111,10 +111,11 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-zSlice = [320, 340]  # manual z slicing range to select depth region for computing viability
+zSlice = [265, 295]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.5
 viabilityThreshold = 0.042
 VolFlip = False
+viaIntThreshold = 13
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_LIV.tif")])
 DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath);  tk.destroy()
@@ -159,6 +160,7 @@ rawLivFilePath = root + '/' + DataId[:-15] + '_IntImg_LIV_raw.tif'
 
 
 viabilityList = [];  viaList = [];  totalList = []
+tmpList = []
 if VolFlip is not True:
     memmap_logInt = tifffile.memmap(linIntFilePath, mode='r')
     memmap_rawLiv = tifffile.memmap(rawLivFilePath, mode='r')
@@ -190,14 +192,25 @@ for frameIndex in zSliceList:
         cntDead = np.sum(rawLivFrame_mask < viabilityThreshold)  # print('Dead count is: ', str(cntDead))
         cntAllPix = np.count_nonzero(~np.isnan(rawLivFrame_mask))  # print('All pixel number is: ', str(cntAllPix))
         viability = cntLiving / (cntLiving + cntDead)  # print('Residual missed count is: ', str(cntAllPix - cntDead - cntLiving))
-        # * * * * * * * BULLSHIT func: compute mean logInt (maybe linInt) from the cells  * * * * * * * * #
+        # # # # * * * * * * * BULLSHIT func: compute mean logInt (maybe linInt) from the cells  * * * * * * * * #
         # rawLivFrame_mask = logIntFrame * frameMask
-        # rawLivFrame_mask_norm = rawLivFrame_mask / 255
+        # rawLivFrame_mask_norm = rawLivFrame_mask / 255 * 35  # log int, where 0 (correspond to -15dB at measurement) is noise floor
         # rawLivFrame_mask_norm[rawLivFrame_mask_norm == 0] = np.nan
-        # meanInt_mask = np.nanmean(rawLivFrame_mask_norm)
-        # viability = meanInt_mask
-        # * * * * * * * BULLSHIT func: compute mean logInt (maybe linInt) from the cells  * * * * * * * * #
-        viabilityList.append(viability);  viaList.append(cntLiving);  totalList.append(cntAllPix)
+        # # # # Bullshit 1: mean intensity
+        # # meanInt_mask = np.nanmean(rawLivFrame_mask_norm)
+        # # viability = meanInt_mask  # mean log intensity [0dB, 35dB] (correspond to [-15dB, 20dB])
+        # # # # BULLSHIT 2: percentage based on intensity threshold # # # # #
+        # bullshit_cntLiving = np.sum(rawLivFrame_mask_norm > viaIntThreshold)
+        # bullshit_cntDead = np.sum(rawLivFrame_mask_norm < viaIntThreshold)
+        # cntAllPix = np.count_nonzero(~np.isnan(rawLivFrame_mask_norm))
+        # viability = bullshit_cntLiving / (bullshit_cntLiving + bullshit_cntDead)
+        # # # # Bullshit 3: make histogram from 2D en-face or 3D sub-volume? # # # # #
+        # # _ = rawLivFrame_mask_norm.flatten()
+        # # tmp = _[~np.isnan(_)]
+        # # tmpList = np.append(tmpList, tmp)
+        # # # # * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * #
+        viabilityList.append(viability)
+        viaList.append(cntLiving);  totalList.append(cntAllPix)
         ax1['d'].scatter((frameIndex-zSliceList[0])*2, viability, color='#6ea6db', marker='o', s=7)  # , np.mean(viabilityList)
     except IndexError:
         pass
@@ -210,3 +223,12 @@ for frameIndex in zSliceList:
 print('Mean en-face fraction (vFrac) is: ', str(np.mean(viabilityList)))
 print('std is: ', str(np.std(viabilityList)))
 print('Volume fraction (vFrac\') is: ', str(np.sum(viaList) / np.sum(totalList)))
+# # # Bullshit 3: make histogram from 2D en-face or 3D sub-volume? # # # # #
+# # # counts, bin_edges = np.histogram(tmpList, bins=20);
+# # # k_mean = np.mean(counts); k_var = np.var(counts);
+# # # k_c = (2 * k_mean - k_var) / (bin_edges[2] - bin_edges[1])**2
+# # # * Above: Shimazaki & Shinomoto bin width optimization, find bins= that minimize k_c * # # #
+# plt.figure(21);
+# plt.hist(tmpList, facecolor='red', bins=30, range=[0, 30], alpha=0.35, density=False)  # Dead
+# plt.hist(tmpList, facecolor='green', bins=30, range=[0, 30], alpha=0.35, density=False)  # Live
+# # # * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * #
