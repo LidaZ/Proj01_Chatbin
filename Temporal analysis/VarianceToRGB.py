@@ -54,11 +54,11 @@ if sys_ivs800: octRangedB = [-2, 10]  # [-5, 20]
 else: octRangedB = [0, 50]  # set dynamic range of log OCT signal display
 
 if multiFolderProcess:
-    root = tk.Tk(); root.withdraw(); Fold_list = []; DataFold_list = []; extension = ['_IntImg.tif']
-    folderPath = filedialog.askdirectory()
+    root = tk.Tk();    root.withdraw();    Fold_list = [];    DataFold_list = [];    extension = ['_IntImg.tif']
+    folderPath = filedialog.askdirectory(title="Press Cancel to Stop Enqueue")
     Fold_list.append(folderPath)
     while len(folderPath) > 0:
-        folderPath = filedialog.askdirectory(initialdir=os.path.dirname(folderPath))
+        folderPath = filedialog.askdirectory(initialdir=os.path.dirname(folderPath), title="Press Cancel to Stop Enqueue")
         if not folderPath: break
         Fold_list.append(folderPath)
     for item in Fold_list:  # list all files contained in each folder
@@ -69,8 +69,7 @@ if multiFolderProcess:
     FileNum = len(DataFold_list)
     root.destroy()
 else:
-    rot = tk.Tk(); rot.withdraw(); rot.attributes("-topmost", True);
-    DataFold_list = filedialog.askopenfilename(filetypes=[("", "*_IntImg.tif")], multiple = True)
+    rot = tk.Tk();  rot.withdraw();  rot.attributes("-topmost", True);  DataFold_list = filedialog.askopenfilename(filetypes=[("", "*_IntImg.tif")], multiple=True)
     rot.destroy()
     # DataId = os.path.basename(DataFold_list);   root = os.path.dirname(DataFold_list);
     FileNum = np.shape(DataFold_list)[0]
