@@ -38,9 +38,18 @@ class PickContour:
 
                 self.pick_stack.append(pick_point)
                 self.select_count += 1
-
                 if self.select_count >= self.contour_points:
                     self.select_not_done = False
+
+            elif event.button is MouseButton.RIGHT:
+                # Right-click to cancel the last selected point
+                if self.select_count > 0:
+                    removed_point = self.pick_stack.pop()
+                    self.select_count -= 1
+                    print(f"Cancelled coordinate: {removed_point};  "
+                          f"Remaining: {self.select_count}/{self.contour_points} clicks")
+                else:   print("No points to cancel.")
+
         else:
             raise ValueError("Selection status not reset.")
 
