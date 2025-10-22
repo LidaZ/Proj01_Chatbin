@@ -121,7 +121,7 @@ if sys_ivs800:  octRangedB = [-15, 20]
 # # # - - - - fetch dir path of data file - - - - # # #
 if multiFolderProcess:
     root = tk.Tk(); root.withdraw(); Fold_list = []; DataFold_list = []; extension = ['.dat', '.bin']
-    folderPath = filedialog.askdirectory()
+    folderPath = filedialog.askdirectory(title="Cancel to Stop Enqueue")
     Fold_list.append(folderPath)
     while len(folderPath) > 0:
         folderPath = filedialog.askdirectory(initialdir=os.path.dirname(folderPath))

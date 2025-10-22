@@ -55,10 +55,10 @@ else: octRangedB = [0, 50]  # set dynamic range of log OCT signal display
 
 if multiFolderProcess:
     root = tk.Tk();    root.withdraw();    Fold_list = [];    DataFold_list = [];    extension = ['_IntImg.tif']
-    folderPath = filedialog.askdirectory(title="Press Cancel to Stop Enqueue")
+    folderPath = filedialog.askdirectory(title="Cancel to Stop Enqueue")
     Fold_list.append(folderPath)
     while len(folderPath) > 0:
-        folderPath = filedialog.askdirectory(initialdir=os.path.dirname(folderPath), title="Press Cancel to Stop Enqueue")
+        folderPath = filedialog.askdirectory(initialdir=os.path.dirname(folderPath), title="Cancel to Stop Enqueue")
         if not folderPath: break
         Fold_list.append(folderPath)
     for item in Fold_list:  # list all files contained in each folder
