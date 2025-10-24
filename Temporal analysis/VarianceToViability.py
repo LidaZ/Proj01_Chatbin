@@ -111,11 +111,11 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-zSlice = [265, 295]  # manual z slicing range to select depth region for computing viability
+zSlice = [351, 353]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.5
-viabilityThreshold = 0.042
+viabilityThreshold = 0.11
 VolFlip = False
-viaIntThreshold = 13
+# viaIntThreshold = 13  # bullshit threshold on intensity to compute viability
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_LIV.tif")])
 DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath);  tk.destroy()
@@ -169,7 +169,8 @@ for frameIndex in zSliceList:
     if VolFlip:  logIntFrame = tifffile.imread(linIntFilePath, key=frameIndex)
     else:  logIntFrame = memmap_logInt[:, frameIndex, :]
     # ax1['a'].clear();  ax1['a'].imshow(logIntFrame, cmap='gray')
-    ax1['a'].clear();  ax1['a'].imshow(rawDat[frameIndex, ...])  # cropIntFrame = logIntFrame.copy() * cropCube[frameIndex, ...]
+    rawDat_enfaceSlice = rawDat[frameIndex, ...]; 
+    ax1['a'].clear();  ax1['a'].imshow(rawDat_enfaceSlice)  # cropIntFrame = logIntFrame.copy() * cropCube[frameIndex, ...]
     cropIntFrame = logIntFrame * cropCube[frameIndex, ...]  # margin zeros should not be passed to cellpose, otherwise indexing error will raise
     cropIntFrame_seg = cropIntFrame[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]]
     ax1['b'].clear();  ax1['b'].imshow(cropIntFrame, cmap='gray')
@@ -180,7 +181,13 @@ for frameIndex in zSliceList:
         cropIntFrameDn[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = cropIntFrame_seg_dn[..., 0]
         # ax1['b'].clear();  ax1['b'].imshow(cropIntFrameDn, cmap='gray')
         frameMask = cropIntFrameDn > intThreshold
-        ax1['c'].clear();  ax1['c'].imshow(frameMask, cmap='gray')
+        # Display masked RGB image: keep pixels where mask is True, black elsewhere
+        masked_rgb = rawDat_enfaceSlice.copy()
+        if masked_rgb.ndim == 3 and masked_rgb.shape[2] >= 3:
+            masked_rgb[~frameMask] = 0
+            ax1['c'].clear();  ax1['c'].imshow(masked_rgb)
+        else:
+            ax1['c'].clear();  ax1['c'].imshow(frameMask, cmap='gray')  # Fallback to show mask in grayscale if input is not RGB
 
         # # # apply frameMask to rawLIV en-face image
         if VolFlip:  rawLivFrame = tifffile.imread(rawLivFilePath, key=frameIndex)
