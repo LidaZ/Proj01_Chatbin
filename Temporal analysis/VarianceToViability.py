@@ -111,9 +111,9 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-zSlice = [351, 353]  # manual z slicing range to select depth region for computing viability
-intThreshold = 0.5
-viabilityThreshold = 0.11
+zSlice = [325, 375]  # manual z slicing range to select depth region for computing viability
+intThreshold = 0.35
+viabilityThreshold = 0.18
 VolFlip = False
 # viaIntThreshold = 13  # bullshit threshold on intensity to compute viability
 
@@ -199,23 +199,26 @@ for frameIndex in zSliceList:
         cntDead = np.sum(rawLivFrame_mask < viabilityThreshold)  # print('Dead count is: ', str(cntDead))
         cntAllPix = np.count_nonzero(~np.isnan(rawLivFrame_mask))  # print('All pixel number is: ', str(cntAllPix))
         viability = cntLiving / (cntLiving + cntDead)  # print('Residual missed count is: ', str(cntAllPix - cntDead - cntLiving))
+
         # # # # * * * * * * * BULLSHIT func: compute mean logInt (maybe linInt) from the cells  * * * * * * * * #
+        # ax1['d'].set_ylim([15, 25]); ax1['d'].yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(1.0))
         # rawLivFrame_mask = logIntFrame * frameMask
         # rawLivFrame_mask_norm = rawLivFrame_mask / 255 * 35  # log int, where 0 (correspond to -15dB at measurement) is noise floor
         # rawLivFrame_mask_norm[rawLivFrame_mask_norm == 0] = np.nan
         # # # # Bullshit 1: mean intensity
-        # # meanInt_mask = np.nanmean(rawLivFrame_mask_norm)
-        # # viability = meanInt_mask  # mean log intensity [0dB, 35dB] (correspond to [-15dB, 20dB])
+        # meanInt_mask = np.nanmean(rawLivFrame_mask_norm)
+        # viability = meanInt_mask  # mean log intensity [0dB, 35dB] (correspond to [-15dB, 20dB])
         # # # # BULLSHIT 2: percentage based on intensity threshold # # # # #
-        # bullshit_cntLiving = np.sum(rawLivFrame_mask_norm > viaIntThreshold)
-        # bullshit_cntDead = np.sum(rawLivFrame_mask_norm < viaIntThreshold)
-        # cntAllPix = np.count_nonzero(~np.isnan(rawLivFrame_mask_norm))
-        # viability = bullshit_cntLiving / (bullshit_cntLiving + bullshit_cntDead)
+        # # bullshit_cntLiving = np.sum(rawLivFrame_mask_norm > viaIntThreshold)
+        # # bullshit_cntDead = np.sum(rawLivFrame_mask_norm < viaIntThreshold)
+        # # cntAllPix = np.count_nonzero(~np.isnan(rawLivFrame_mask_norm))
+        # # viability = bullshit_cntLiving / (bullshit_cntLiving + bullshit_cntDead)
         # # # # Bullshit 3: make histogram from 2D en-face or 3D sub-volume? # # # # #
         # # _ = rawLivFrame_mask_norm.flatten()
         # # tmp = _[~np.isnan(_)]
         # # tmpList = np.append(tmpList, tmp)
         # # # # * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * #
+
         viabilityList.append(viability)
         viaList.append(cntLiving);  totalList.append(cntAllPix)
         ax1['d'].scatter((frameIndex-zSliceList[0])*2, viability, color='#6ea6db', marker='o', s=7)  # , np.mean(viabilityList)
