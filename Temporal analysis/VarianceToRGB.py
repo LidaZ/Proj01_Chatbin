@@ -1,7 +1,10 @@
 # import os
 import sys
 import numpy as np
-# from numpy import fft
+import numpy.fft as fft
+# from pyparsing import line_end
+from scipy.signal import welch
+from scipy.signal import periodogram
 import gc
 # import matplotlib.cm as cm
 # from tqdm.auto import tqdm
@@ -43,10 +46,11 @@ if using IVS-800 data:
 
 # # # - - - [1],[2, 33多一帧], [34, 65], [66, 97], [98, 129]..., [3938, 3969], [3970, 4000少一帧]- - - # # #
 errorShiftFrame = 0  # = 1 before 2024/09/05. Bug in scan pattern was fixed.
+frames_per_second = 30
 rasterRepeat = 16
 computeRasterRepeat = 16
 sys_ivs800 = True
-saveImg = True
+saveImg = False
 
 multiFolderProcess = True  # if multiple data folders
 hueRange = [0., 1]  # LIV (variance): 0~10 / LIV_norm: 0~1
@@ -106,7 +110,8 @@ for FileId in range(FileNum):
         ax1 = fig1.subplot_mosaic("a")
     sys.stdout.write('\n')
     sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': ' + str(FileId + 1) + '/' + str(FileNum))
-    # dim_y_raster = 1
+
+    dim_y_raster = 3
     for batch_id in range(dim_y_raster):
         # # # - - - filt dc component, extract fluctuation with f>0.5hz when fs=50hz - - - # # #
         rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id*rasterRepeat+errorShiftFrame+computeRasterRepeat), :, :]  # [32(y), 300(z), 256(x)]
@@ -145,23 +150,39 @@ for FileId in range(FileNum):
         # plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         plt.pause(0.02)
 
-        # # # - - - check int fluctuation profile / frequency spec at a designated pixel - - - # # #
-        # pix_loc = [401, 131]  # [Y_index, X_index]
-        # lineProfile = rawDat_batch[:, pix_loc[0], pix_loc[1]]
-        # lineProfile_freq = np.abs(fft.fft(lineProfile))
-        # lineProfile_freqNorm = lineProfile_freq / np.max(lineProfile_freq)
-        # length_fft = round(len(lineProfile)/2)
-        #
-        # fig1 = plt.figure(14, figsize=(7, 7));  plt.clf()
-        # ax1 = fig1.subplot_mosaic("a;b")
-        # ax1['a'].cla()
-        # ax1['a'].plot(lineProfile)
-        # ax1['a'].set_xticks([0, 10, 20, 30], ["0", "0.2", "0.4", "0.6"])
-        # ax1['a'].set_xlabel('Time (s)')
-        # ax1['b'].cla()
-        # ax1['b'].plot(lineProfile_freqNorm[0:length_fft])
-        # ax1['b'].set_xticks([0, 4, 8, 12, 16], ["0", "6.25", "12.5", "18.75", "25.0"])  # 50Hz/32
-        # ax1['b'].set_xlabel('Frequency (Hz)')
+
+        # # - - - check int fluctuation profile / normalized power spectral density at a designated pixel - - - # # #
+        pix_loc = [359, 216]  # [Z_index, X_index]  # 动：[385, 199]  静：[347, 54]
+        linearIntRecord = rawDat_batch[:, pix_loc[0], pix_loc[1]]
+        # t = np.linspace(0, computeRasterRepeat / frames_per_second, computeRasterRepeat)  # sin wave for plot test
+        # freq_simulate = 5;   linearIntRecord = 1 * np.sin(2 * np.pi * freq_simulate * t) + 1
+        length_fft = round(len(linearIntRecord) / 2)
+
+        fft_scale = 4;  noisefloor_dB = 0;
+        seg_size = 16;  overlap_size = seg_size / 2
+        freq_bins, psd = welch(linearIntRecord, fs=frames_per_second, nperseg=seg_size, noverlap=overlap_size, window='hann',
+                               nfft=len(linearIntRecord)*fft_scale, scaling='density', detrend=False, average='median')
+        # # # welch适合多采样点，牺牲部分频率分辨率换来更好的抗误差
+        # freq_bins, psd = periodogram(linearIntRecord, frames_per_second, window='hann',
+        #                              nfft=len(linearIntRecord)*fft_scale, scaling='density')
+        # psd_dB = 10 * np.log10((psd+1) / (noisefloor_dB + 1))  # avoid 0/0 in dB scale
+        psd_norm = psd / np.sum(psd)  # L1 normalized psd, its sum over all frequencies (freq_bins) is 1.
+        freq_mean = psd_norm.dot(freq_bins)
+
+        fig1 = plt.figure(14, figsize=(7, 7));  plt.clf()
+        ax1 = fig1.subplot_mosaic("a;b")
+        ax1['a'].cla();     ax1['a'].plot(linearIntRecord)
+        # ax1['a'].set_ylim([0, 30])
+        ax1['a'].set_xticks([0, length_fft, length_fft*2], ["0", f"{(length_fft/frames_per_second):.1f}", f"{(2 * length_fft/frames_per_second):.1f}"])
+        ax1['a'].set_xlabel('Time (s)'); ax1['a'].set_ylabel('Linear intensity (a.u.)')  # 0 => noise floor
+        ax1['b'].cla();    ax1['b'].fill_between(freq_bins, psd_norm, color='gray', alpha=0.5)
+        ax1['b'].set_ylim([0, 0.5])
+        ax1['b'].set_xlabel('Frequency (Hz)')
+        ax1['b'].set_ylabel('L1 Norm PSD (a.u.)')
+        ax1['b'].axvline(x=freq_mean, color='r', linestyle='--', label=f'Mean freq: {freq_mean:.1f} Hz')
+        ax1['b'].legend()
+
+
     del DataFold, rawDat
     gc.collect()
 
