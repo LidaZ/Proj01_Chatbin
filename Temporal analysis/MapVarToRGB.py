@@ -1,9 +1,10 @@
 import math
 import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib
-import matplotlib.cm as cm
 matplotlib.use("Qt5Agg")
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+
 
 
 def num_to_rgb(val, max_val=3):

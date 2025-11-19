@@ -18,9 +18,10 @@ import tifffile
 import os
 import tkinter as tk
 from tkinter import filedialog
-import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Qt5Agg")
+import matplotlib.pyplot as plt
+
 
 """
 Open source project for cell counting system. 
@@ -50,11 +51,11 @@ frames_per_second = 30
 rasterRepeat = 16
 computeRasterRepeat = 16
 sys_ivs800 = True
-saveImg = True
+saveImg = False
 
 multiFolderProcess = True  # if multiple data folders
-hueRange = [0., 1]  # LIV (variance): 0~10 / LIV_norm: 0~0.13
-meanFreqRange = [0.7, 2.5]
+var_range_ToHue = [0., 1]  # LIV (variance): 0~10 / LIV_norm: 0~0.13
+meanFreq_range_ToSat = [0.7, 2.5]
 if sys_ivs800: octRangedB = [-2, 10]  # [-5, 20]
 else: octRangedB = [0, 50]  # set dynamic range of log OCT signal display
 
@@ -112,7 +113,7 @@ for FileId in range(FileNum):
     sys.stdout.write('\n')
     sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': ' + str(FileId + 1) + '/' + str(FileNum))
 
-    # dim_y_raster = 30
+    dim_y_raster = 16
     for batch_id in range(dim_y_raster):
         # # # - - - filt dc component, extract fluctuation with f>0.5hz when fs=50hz - - - # # #
         rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id*rasterRepeat+errorShiftFrame+computeRasterRepeat), :, :]  # [32(y), 300(z), 256(x)]
@@ -123,19 +124,18 @@ for FileId in range(FileNum):
 
 
         # # # - - - compute max int projection along time window (computeRasterRepeat) at each pix > Value - - - # # #
-        batchProj_valMax = np.max(rawDat_batch_log, axis=0)  # max of log intensity, typical range: (0.1, 36)
-        batchProj_valMax_clip = np.clip((batchProj_valMax-octRangedB[0]) / (octRangedB[1]-octRangedB[0]), 0, 1)   # clipped Log int
+        batchProj_maxInt = np.max(rawDat_batch_log, axis=0)  # max of log intensity, typical range: (0.1, 36)
+        batchProj_valMax_clip = np.clip((batchProj_maxInt - octRangedB[0]) / (octRangedB[1] - octRangedB[0]), 0, 1)   # clipped Log int
         # plt.figure(13); plt.clf(); plt.imshow(batchProj_valMax, cmap='gray')
 
 
         # # # - - - compute variance/std/freq at each pix > Hue - - - # # #
         batchProj_var = np.var(rawDat_batch_log, axis=0)  # LIV: linear > log > variance. typical display range: (0, 146) > (0, 10)
-        batchProj_var_norm = batchProj_var / (batchProj_valMax**1)  # batchProj_valMax**2 = normalized LIV, so that it becomes normalize because dB^2 / dB^2  # typical display range: (0, 1.3).
-        # batchProj_var = np.var(rawDat_batch_log / (np.tile(batchProj_valMax, (32, 1, 1))), axis=0)
-        # batchProj_var_norm = batchProj_var
-
+        # batchProj_var_norm = batchProj_var  # LIV (dB^2); typical display range: (0, 10)
+        batchProj_var_norm = batchProj_var / batchProj_maxInt  # Modified-LIV (dB); typical display range: (0, 1.)
+        # batchProj_var_norm = batchProj_var / (batchProj_maxInt ** 2)  # Normalized LIV (a.u.); typical display range: (0, 1.3)
         batchProj_varHue = np.multiply(np.clip(
-            (batchProj_var_norm-hueRange[0]) / (hueRange[1]-hueRange[0]), 0, 1), 0.6)  # limit color display range from red to blue
+            (batchProj_var_norm - var_range_ToHue[0]) / (var_range_ToHue[1] - var_range_ToHue[0]), 0, 1), 0.6)  # limit color display range from red to blue
 
 
         # # # - - - compute mean frequency of each B-scan (from normalized power spectral density) > saturation- - - # # #
@@ -143,18 +143,15 @@ for FileId in range(FileNum):
         # # - - - compute normalized power spectral density and mean frequency for all pixels in the Z-X plane - - - # # #
         t_len, z_len, x_len = rawDat_batch.shape  # rawDat_batch: shape [time, Z, X]
         linearIntRecord_all = rawDat_batch.reshape(t_len, -1)  # reshape to [time, N_pixel]
-
         freq_bins, psd_all = welch(linearIntRecord_all, fs=frames_per_second, nperseg=seg_size, noverlap=overlap_size,
-                                   window="hann",
-                                   nfft=t_len * fft_scale, scaling="density", detrend=False, average="median",
+                                   window="hann", nfft=t_len * fft_scale, scaling="density", detrend=False, average="median",
                                    axis=0)  # psd_all: shape [n_freq, N_pixel]
         psd_sum = np.sum(psd_all, axis=0, keepdims=True)  # shape [n_freq, N_pixel] -> [1, N_pixel]
         psd_sum[psd_sum == 0] = 1.0  # set power over spectrum as 1 when computed as 0, to avoid dividing by 0 in norm
-        psd_norm_all = psd_all / psd_sum  # L1 normalize PSD at each pixel of B-scan
+        psd_norm_all = psd_all / psd_sum  # L1 normalize PSD at each pixel. Ref: doi.org/10.1038/s41377-020-00375-8
         freq_mean_all = freq_bins @ psd_norm_all  # freq_bins: [n_freq], psd_norm_all: [n_freq, N_pixel]
         freq_mean_map = freq_mean_all.reshape(z_len, x_len)  # reshape 回 (Z, X)，得到整幅图的 freq_mean 分布
-
-        batchProj_meanFreqSat = np.clip((freq_mean_map - meanFreqRange[0]) / (meanFreqRange[1] - meanFreqRange[0]), 0, 1)
+        batchProj_meanFreqSat = np.clip((freq_mean_map - meanFreq_range_ToSat[0]) / (meanFreq_range_ToSat[1] - meanFreq_range_ToSat[0]), 0, 1)
 
 
         # # # - - - check int fluctuation profile / normalized power spectral density at a designated pixel - - - # # #
@@ -190,9 +187,8 @@ for FileId in range(FileNum):
         # # # - - - convert to hue color space - - - # # #
         batchProj_rgb = hsv_to_rgb(np.transpose([batchProj_varHue,
                                                  batchProj_meanFreqSat,
-                                                 batchProj_valMax_clip]))  # [varProj_hue, varProj_sat/_val, varProj_val]  # [batchProj_varHue, batchProj_meanFreqSat, batchProj_valMax_clip]
+                                                 batchProj_valMax_clip]))  # [varProj_hue, varProj_sat/_val, varProj_val]  # [batchProj_varHue, np.ones_like(batchProj_varHue), batchProj_valMax_clip]
         varRgbImg[batch_id, :, :, :] = np.swapaxes(batchProj_rgb, 0, 1) * 255
-
         varRawImg[batch_id, :, :] = batchProj_var_norm
 
 
@@ -213,3 +209,56 @@ for FileId in range(FileNum):
     if saveImg:
         tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'LIV.tif', varRgbImg)
         tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'LIV_raw.tif', varRawImg)
+
+
+# # from mpl_toolkits.mplot3d import Axes3D
+# axis_hue = np.linspace(0., 0.6, 20)
+# axis_sat = np.linspace(0., 1., 20)
+# axis_val = np.linspace(0., 1., 20)
+# cube_hue, cube_sat, cube_val = np.meshgrid(axis_hue, axis_sat, axis_val, indexing="ij")
+# hsv_cube = np.stack([cube_hue, cube_sat, cube_val], axis=-1)
+# rgb_cube = hsv_to_rgb(hsv_cube)
+#
+# fig = plt.figure(figsize=(6, 6))
+# ax = fig.add_subplot(111, projection='3d')
+#
+# k = -1  # 最后一层, 面1: V = max
+# H_plane = cube_hue[:, :, k]
+# S_plane = cube_sat[:, :, k]
+# V_plane = cube_val[:, :, k]
+# RGB_plane = rgb_cube[:, :, k, :]
+# ax.plot_surface(H_plane, S_plane, V_plane, facecolors=RGB_plane, linewidth=0, antialiased=False)
+#
+# k = 0  # 面2: V = min
+# H_plane = cube_hue[:, :, k]
+# S_plane = cube_sat[:, :, k]
+# V_plane = cube_val[:, :, k]
+# RGB_plane = rgb_cube[:, :, k, :]
+# ax.plot_surface(H_plane, S_plane, V_plane, facecolors=RGB_plane, linewidth=0, antialiased=False)
+#
+# j = -1  # 面3: S = max
+# H_plane = cube_hue[:, j, :]
+# S_plane = cube_sat[:, j, :]
+# V_plane = cube_val[:, j, :]
+# RGB_plane = rgb_cube[:, j, :, :]
+# ax.plot_surface(H_plane, S_plane, V_plane, facecolors=RGB_plane, linewidth=0, antialiased=False)
+#
+# h = 0  # 面4: H = 0
+# H_plane = cube_hue[h, :, :]
+# S_plane = cube_sat[h, :, :]
+# V_plane = cube_val[h, :, :]
+# RGB_plane = rgb_cube[h, :, :, :]
+# ax.plot_surface(H_plane, S_plane, V_plane, facecolors=RGB_plane, linewidth=0, antialiased=False)
+#
+# ax.set_xlabel('Hue > LIV')
+# ax.set_ylabel('Sat > mean frequency')
+# ax.set_zlabel('Val > mean intensity')
+# plt.show();  ax.grid(False);  # ax.axis('off')
+# # make the panes transparent
+# ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+# ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+# ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+# # make the grid lines transparent
+# ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+# ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+# ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)

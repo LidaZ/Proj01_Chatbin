@@ -17,13 +17,14 @@ import tifffile
 import os
 from tkinter import *
 from tkinter import filedialog
+import matplotlib
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 # from mpl_point_clicker import clicker
 from matplotlib.backend_bases import MouseButton
 import matplotlib.patches as patches
 from cellpose import denoise #, utils, io
-import matplotlib
-matplotlib.use("Qt5Agg")
+
 
 
 """

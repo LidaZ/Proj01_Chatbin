@@ -1,6 +1,8 @@
 import numpy as np
 from scipy import stats
 from numpy import fft
+import matplotlib
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import gc
 import pingouin as pg
@@ -9,8 +11,7 @@ import pandas as pd
 # from scipy.optimize import curve_fit
 # from tifffile import imsave
 import pandas
-import matplotlib
-matplotlib.use("Qt5Agg")
+
 
 
 # folderPath_hv = r"F:\Data_2024\20240626_jurkat\hv-0hr\3D particle analysis"

@@ -1,8 +1,9 @@
 import numpy as np
 from matplotlib.colors import hsv_to_rgb
-import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Qt5Agg")
+import matplotlib.pyplot as plt
+
 
 size = 100
 batchProj_val = np.zeros((size, size), 'float32')

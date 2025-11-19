@@ -1,6 +1,8 @@
 import numpy as np
 from scipy import stats
 from numpy import fft
+import matplotlib
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import gc
 import pingouin as pg
@@ -10,8 +12,6 @@ from scipy.stats import pearsonr
 # from scipy.optimize import curve_fit
 # from tifffile import imsave
 import pandas
-import matplotlib
-matplotlib.use("Qt5Agg")
 
 
 

@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import tifffile
 from configparser import ConfigParser
@@ -17,7 +18,6 @@ from tkinter import filedialog
 # from tkinter import messagebox
 import tkinter as tk
 from tkinter import simpledialog
-matplotlib.use("Qt5Agg")
 
 
 """

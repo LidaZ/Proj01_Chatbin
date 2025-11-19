@@ -2,6 +2,8 @@ import os
 import sys
 import numpy as np
 from numpy import fft
+import matplotlib
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import gc
 # from scipy import stats
@@ -11,8 +13,6 @@ import gc
 # from scipy.optimize import curve_fit
 import tifffile
 from PIL import Image
-import matplotlib
-matplotlib.use("Qt5Agg")
 
 
 folderPath = r"F:\Data_2024\20240626_jurkat\hv-0hr"
