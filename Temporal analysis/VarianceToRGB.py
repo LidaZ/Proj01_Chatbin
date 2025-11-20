@@ -43,22 +43,22 @@ if using IVS-800 data:
 """
 
 
-###
-
-# # # - - - [1],[2, 33多一帧], [34, 65], [66, 97], [98, 129]..., [3938, 3969], [3970, 4000少一帧]- - - # # #
-errorShiftFrame = 0  # = 1 before 2024/09/05. Bug in scan pattern was fixed.
+### System parameters ###
 frames_per_second = 30
 rasterRepeat = 16
-computeRasterRepeat = 16
+rasterRepeat_cal = rasterRepeat
 sys_ivs800 = True
-saveImg = False
+saveImg = True
 
+### Image processing parameters ###
 multiFolderProcess = True  # if multiple data folders
 var_range_ToHue = [0., 1]  # LIV (variance): 0~10 / LIV_norm: 0~0.13
-meanFreq_range_ToSat = [0.7, 2.5]
+meanFreq_range_ToSat = [0.5, 2.5]
 if sys_ivs800: octRangedB = [-2, 10]  # [-5, 20]
 else: octRangedB = [0, 50]  # set dynamic range of log OCT signal display
 
+### Starts here ###
+errorShiftFrame = 0  # 0 for normal, 8 for IVS-800 data
 if multiFolderProcess:
     root = tk.Tk();    root.withdraw();    Fold_list = [];    DataFold_list = [];    extension = ['_IntImg.tif']
     folderPath = filedialog.askdirectory(title="Cancel to Stop Enqueue")
@@ -102,7 +102,7 @@ for FileId in range(FileNum):
     # # # - - - initialize variance-to-rgb array, define the display variance range - - - # # #
     batchList = np.linspace(0, dim_y, int(dim_y/rasterRepeat), endpoint=False)
     varRgbImg = np.zeros((dim_y_raster, dim_z, dim_x, 3), 'uint8')
-    # batchProj_sat = np.ones((dim_z, dim_x), 'float32')
+    meanFreqImg = np.zeros((dim_y_raster, dim_z, dim_x), 'float32')
     varRawImg = np.zeros((dim_y_raster, dim_z, dim_x), 'float32')
 
     if 'fig1' in globals(): pass
@@ -113,12 +113,11 @@ for FileId in range(FileNum):
     sys.stdout.write('\n')
     sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': ' + str(FileId + 1) + '/' + str(FileNum))
 
-    dim_y_raster = 16
+    # dim_y_raster = 2
     for batch_id in range(dim_y_raster):
-        # # # - - - filt dc component, extract fluctuation with f>0.5hz when fs=50hz - - - # # #
-        rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id*rasterRepeat+errorShiftFrame+computeRasterRepeat), :, :]  # [32(y), 300(z), 256(x)]
-        # rawDat_batch_dc = butter_lowpass_filter(rawDat_batch, cutoff, fs, order, 0)
         # # # - - - disable DC component filter function for now - - - # # #
+        rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id * rasterRepeat + errorShiftFrame + rasterRepeat_cal), :, :]  # [32(y), 300(z), 256(x)]
+        # rawDat_batch_dc = butter_lowpass_filter(rawDat_batch, cutoff, fs, order, 0)
         rawDat_batch_filt = rawDat_batch  # - rawDat_batch_dc        # linear intensity
         rawDat_batch_log = np.multiply(10, np.log10(rawDat_batch_filt + 1))  # dB, log intensity, 10*log10(linear), typical range: (0, 36)
 
@@ -134,12 +133,12 @@ for FileId in range(FileNum):
         # batchProj_var_norm = batchProj_var  # LIV (dB^2); typical display range: (0, 10)
         batchProj_var_norm = batchProj_var / batchProj_maxInt  # Modified-LIV (dB); typical display range: (0, 1.)
         # batchProj_var_norm = batchProj_var / (batchProj_maxInt ** 2)  # Normalized LIV (a.u.); typical display range: (0, 1.3)
-        batchProj_varHue = np.multiply(np.clip(
+        batchProj_varHue_clip = np.multiply(np.clip(
             (batchProj_var_norm - var_range_ToHue[0]) / (var_range_ToHue[1] - var_range_ToHue[0]), 0, 1), 0.6)  # limit color display range from red to blue
 
 
         # # # - - - compute mean frequency of each B-scan (from normalized power spectral density) > saturation- - - # # #
-        fft_scale = 4;        seg_size = 16;        overlap_size = seg_size / 2
+        fft_scale = 4;        seg_size = rasterRepeat_cal;        overlap_size = seg_size / 2
         # # - - - compute normalized power spectral density and mean frequency for all pixels in the Z-X plane - - - # # #
         t_len, z_len, x_len = rawDat_batch.shape  # rawDat_batch: shape [time, Z, X]
         linearIntRecord_all = rawDat_batch.reshape(t_len, -1)  # reshape to [time, N_pixel]
@@ -151,11 +150,11 @@ for FileId in range(FileNum):
         psd_norm_all = psd_all / psd_sum  # L1 normalize PSD at each pixel. Ref: doi.org/10.1038/s41377-020-00375-8
         freq_mean_all = freq_bins @ psd_norm_all  # freq_bins: [n_freq], psd_norm_all: [n_freq, N_pixel]
         freq_mean_map = freq_mean_all.reshape(z_len, x_len)  # reshape 回 (Z, X)，得到整幅图的 freq_mean 分布
-        batchProj_meanFreqSat = np.clip((freq_mean_map - meanFreq_range_ToSat[0]) / (meanFreq_range_ToSat[1] - meanFreq_range_ToSat[0]), 0, 1)
+        batchProj_meanFreqSat_clip = np.clip((freq_mean_map - meanFreq_range_ToSat[0]) / (meanFreq_range_ToSat[1] - meanFreq_range_ToSat[0]), 0, 1)
 
 
         # # # - - - check int fluctuation profile / normalized power spectral density at a designated pixel - - - # # #
-        # pix_loc = [354, 116]  # [Z_index, X_index]  # 动：[385, 199]  静：[347, 54]
+        # pix_loc = [438, 106]  # [Z_index, X_index]  # 动：[354, 116]  静：[344, 118]
         # linearIntRecord = rawDat_batch[:, pix_loc[0], pix_loc[1]]
         # # t = np.linspace(0, computeRasterRepeat / frames_per_second, computeRasterRepeat)  # sin wave for plot test
         # # freq_simulate = 5;   linearIntRecord = 1 * np.sin(2 * np.pi * freq_simulate * t) + 1
@@ -173,11 +172,12 @@ for FileId in range(FileNum):
         # fig1 = plt.figure(14, figsize=(7, 7));  plt.clf()
         # ax1 = fig1.subplot_mosaic("a;b")
         # ax1['a'].cla();     ax1['a'].plot(linearIntRecord)
-        # # ax1['a'].set_ylim([0, 30])
+        # ax1['a'].set_xlim(xmin=0)
         # ax1['a'].set_xticks([0, length_fft, length_fft*2], ["0", f"{(length_fft/frames_per_second):.1f}", f"{(2 * length_fft/frames_per_second):.1f}"])
         # ax1['a'].set_xlabel('Time (s)'); ax1['a'].set_ylabel('Linear intensity (a.u.)')  # 0 => noise floor
-        # ax1['b'].cla();    ax1['b'].fill_between(freq_bins, psd_norm, color='gray', alpha=0.5)
-        # ax1['b'].set_ylim([0, 0.5])
+        # ax1['b'].cla();     # ax1['b'].set_xlim(xmin=0)
+        # # ax1['b'].fill_between(freq_bins, psd_norm, color='gray', alpha=0.5);  ax1['b'].set_ylim([0, 0.5])  # 画L1 normalized PSD
+        # ax1['b'].fill_between(freq_bins, psd, color='gray', alpha=0.5);  ax1['b'].set_ylim(0, psd.max().round())  # 直接画PSD，总能量和光强int线性相关
         # ax1['b'].set_xlabel('Frequency (Hz)')
         # ax1['b'].set_ylabel('L1 Norm PSD (a.u.)')
         # ax1['b'].axvline(x=freq_mean, color='r', linestyle='--', label=f'Mean freq: {freq_mean:.1f} Hz')
@@ -185,8 +185,8 @@ for FileId in range(FileNum):
 
 
         # # # - - - convert to hue color space - - - # # #
-        batchProj_rgb = hsv_to_rgb(np.transpose([batchProj_varHue,
-                                                 batchProj_meanFreqSat,
+        batchProj_rgb = hsv_to_rgb(np.transpose([batchProj_varHue_clip,
+                                                 batchProj_meanFreqSat_clip,
                                                  batchProj_valMax_clip]))  # [varProj_hue, varProj_sat/_val, varProj_val]  # [batchProj_varHue, np.ones_like(batchProj_varHue), batchProj_valMax_clip]
         varRgbImg[batch_id, :, :, :] = np.swapaxes(batchProj_rgb, 0, 1) * 255
         varRawImg[batch_id, :, :] = batchProj_var_norm
@@ -205,60 +205,8 @@ for FileId in range(FileNum):
     del DataFold, rawDat
     gc.collect()
 
-    # # - - - save image as tiff stack - - - # # #
+    # # - - - save image and raw data as tiff stacks - - - # # #
     if saveImg:
         tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'LIV.tif', varRgbImg)
         tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'LIV_raw.tif', varRawImg)
-
-
-# # from mpl_toolkits.mplot3d import Axes3D
-# axis_hue = np.linspace(0., 0.6, 20)
-# axis_sat = np.linspace(0., 1., 20)
-# axis_val = np.linspace(0., 1., 20)
-# cube_hue, cube_sat, cube_val = np.meshgrid(axis_hue, axis_sat, axis_val, indexing="ij")
-# hsv_cube = np.stack([cube_hue, cube_sat, cube_val], axis=-1)
-# rgb_cube = hsv_to_rgb(hsv_cube)
-#
-# fig = plt.figure(figsize=(6, 6))
-# ax = fig.add_subplot(111, projection='3d')
-#
-# k = -1  # 最后一层, 面1: V = max
-# H_plane = cube_hue[:, :, k]
-# S_plane = cube_sat[:, :, k]
-# V_plane = cube_val[:, :, k]
-# RGB_plane = rgb_cube[:, :, k, :]
-# ax.plot_surface(H_plane, S_plane, V_plane, facecolors=RGB_plane, linewidth=0, antialiased=False)
-#
-# k = 0  # 面2: V = min
-# H_plane = cube_hue[:, :, k]
-# S_plane = cube_sat[:, :, k]
-# V_plane = cube_val[:, :, k]
-# RGB_plane = rgb_cube[:, :, k, :]
-# ax.plot_surface(H_plane, S_plane, V_plane, facecolors=RGB_plane, linewidth=0, antialiased=False)
-#
-# j = -1  # 面3: S = max
-# H_plane = cube_hue[:, j, :]
-# S_plane = cube_sat[:, j, :]
-# V_plane = cube_val[:, j, :]
-# RGB_plane = rgb_cube[:, j, :, :]
-# ax.plot_surface(H_plane, S_plane, V_plane, facecolors=RGB_plane, linewidth=0, antialiased=False)
-#
-# h = 0  # 面4: H = 0
-# H_plane = cube_hue[h, :, :]
-# S_plane = cube_sat[h, :, :]
-# V_plane = cube_val[h, :, :]
-# RGB_plane = rgb_cube[h, :, :, :]
-# ax.plot_surface(H_plane, S_plane, V_plane, facecolors=RGB_plane, linewidth=0, antialiased=False)
-#
-# ax.set_xlabel('Hue > LIV')
-# ax.set_ylabel('Sat > mean frequency')
-# ax.set_zlabel('Val > mean intensity')
-# plt.show();  ax.grid(False);  # ax.axis('off')
-# # make the panes transparent
-# ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-# ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-# ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-# # make the grid lines transparent
-# ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
-# ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
-# ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+        tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'meanFreq.tif', meanFreqImg)
