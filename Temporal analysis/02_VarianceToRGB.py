@@ -190,6 +190,7 @@ for FileId in range(FileNum):
                                                  batchProj_valMax_clip]))  # [varProj_hue, varProj_sat/_val, varProj_val]  # [batchProj_varHue, np.ones_like(batchProj_varHue), batchProj_valMax_clip]
         varRgbImg[batch_id, :, :, :] = np.swapaxes(batchProj_rgb, 0, 1) * 255
         varRawImg[batch_id, :, :] = batchProj_var_norm
+        meanFreqImg[batch_id, :, :] = freq_mean_map
 
 
         # # # - - - fresh progress bar display - - - # # #
