@@ -112,7 +112,7 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-zSlice = [353, 354]  # manual z slicing range to select depth region for computing viability
+zSlice = [354, 354]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.35
 viabilityThreshold = 0.18
 VolFlip = False
@@ -242,8 +242,13 @@ for frameIndex in zSliceList:
             valid_mask = ~np.isnan(y_Liv) & ~np.isnan(x_meanFreq)
 
             # 绘制 scatter，使用切片 [::10] 进行降采样以防止卡顿
-            step = 10;  # ax1['d'].clear();
-            ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=5, c='#6ea6db', alpha=0.7)
+            step = 10;   # ax1['d'].clear();
+            x_vals = x_meanFreq[valid_mask][::step]
+            y_vals = y_Liv[valid_mask][::step]
+            mask_green = y_vals > viabilityThreshold
+            mask_red = y_vals <= viabilityThreshold
+            ax1['d'].scatter(x_vals[mask_green], y_vals[mask_green], s=7, c='green', marker='o', alpha=0.6)  # 绿色点使用圆点 'o'
+            ax1['d'].scatter(x_vals[mask_red], y_vals[mask_red], s=7, c='red', marker='x', alpha=0.6)  # 红色点使用叉号 'x'
 
     except IndexError:
         pass
