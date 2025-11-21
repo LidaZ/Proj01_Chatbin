@@ -85,7 +85,7 @@ def on_release(event):
             (x2, y2)  # bottom-right
         ]
         # print("Rectangle corners (in pixels):", rectangle_coords)
-        plt.gca().add_patch(patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=1, edgecolor='y', facecolor='none'))
+        event.inaxes.add_patch(patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=1, edgecolor='y', facecolor='none'))
         selectNotDone = False
         return rectangle_coords
 
@@ -112,10 +112,11 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-zSlice = [325, 375]  # manual z slicing range to select depth region for computing viability
+zSlice = [353, 354]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.35
 viabilityThreshold = 0.18
 VolFlip = False
+bivariate_mode = True  # enalbe bivariate analysis using mean frenquency and (modified) LIV
 # viaIntThreshold = 13  # bullshit threshold on intensity to compute viability
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_LIV.tif")])
@@ -132,16 +133,19 @@ cropCube = np.zeros([dim_z, dim_y, dim_x], dtype=int)
 model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
 zSliceList = np.linspace(zSlice[0], zSlice[1], zSlice[1]-zSlice[0]+1).astype('int')
 
-fig1 = plt.figure(10, figsize=(12, 5));  plt.clf()
+fig1 = plt.figure(10, figsize=(9, 7));  plt.clf()
 # # fig1.canvas.manager.window.attributes('-topmost', 1);  fig1.canvas.manager.window.attributes('-topmost', 0)
 # # fig1.subplots_adjust(bottom=0, top=1, left=0, right=1)
-ax1 = fig1.subplot_mosaic("abc;abc;ddd")
+ax1 = fig1.subplot_mosaic("abc;ddd")
 ax1['a'].title.set_text('Drag rectangle to select ROI from dOCT')
 ax1['b'].title.set_text('After manual cropping')
 ax1['c'].title.set_text('Segmentation mask')
-ax1['d'].set_ylabel('Viable fraction');  ax1['d'].set_xlabel('En-face slice at depth (um)')
-ax1['d'].set_ylim([-0.01, 1.02]);  ax1['d'].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
-ax1['d'].set_xlim([0, len(zSliceList)*2]);
+if bivariate_mode is False:
+    ax1['d'].set_ylabel('Viable fraction');  ax1['d'].set_xlabel('En-face slice at depth (um)')
+    ax1['d'].set_ylim([-0.01, 1.02]);  ax1['d'].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
+    ax1['d'].set_xlim([0, len(zSliceList)*2]);
+elif bivariate_mode is True:
+    ax1['d'].set_xlabel('Mean frequency (Hz)');  ax1['d'].set_ylabel('LIV (dB^2)')
 
 # # # draw rectangles at the first and last frames, and the overlapping cubic is the 3D ROI for viability (volume fraction) computation
 frameIndex = zSliceList[0]
@@ -158,6 +162,7 @@ cropCube[:, overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2
 # # 3D version is only for test visualize, a 2D version is preferred which is supposed to work with an en-face image stack
 linIntFilePath = root + '/' + DataId[:-15] + '_3d_view.tif'
 rawLivFilePath = root + '/' + DataId[:-15] + '_IntImg_LIV_raw.tif'
+if bivariate_mode:  meanFreqFilePath = root + '/' + DataId[:-15] + '_IntImg_meanFreq.tif'
 
 
 viabilityList = [];  viaList = [];  totalList = []
@@ -165,6 +170,7 @@ tmpList = []
 if VolFlip is not True:
     memmap_logInt = tifffile.memmap(linIntFilePath, mode='r')
     memmap_rawLiv = tifffile.memmap(rawLivFilePath, mode='r')
+    if bivariate_mode:  memmap_meanFreq = tifffile.memmap(meanFreqFilePath, mode='r')
 
 for frameIndex in zSliceList:
     if VolFlip:  logIntFrame = tifffile.imread(linIntFilePath, key=frameIndex)
@@ -222,7 +228,23 @@ for frameIndex in zSliceList:
 
         viabilityList.append(viability)
         viaList.append(cntLiving);  totalList.append(cntAllPix)
-        ax1['d'].scatter((frameIndex-zSliceList[0])*2, viability, color='#6ea6db', marker='o', s=7)  # , np.mean(viabilityList)
+        if bivariate_mode is False:
+            ax1['d'].scatter((frameIndex-zSliceList[0])*2, viability, color='#6ea6db', marker='o', s=7)  # , np.mean(viabilityList)
+        else:
+            # # # - - - Create two-way ANOVA plot using (modified) LIV and mean frequency - - - # # #
+            meafreqFrame = memmap_meanFreq[:, frameIndex, :]
+            meafreqFrame_mask = meafreqFrame * frameMask
+            meafreqFrame_mask[meafreqFrame_mask == 0] = np.nan
+            ax1['c'].clear();  ax1['c'].imshow(meafreqFrame_mask, cmap='hot')
+            # 提取非nan元素, 找到两者都不为nan的索引
+            y_Liv = rawLivFrame_mask.flatten()
+            x_meanFreq = meafreqFrame_mask.flatten() # - 0.7
+            valid_mask = ~np.isnan(y_Liv) & ~np.isnan(x_meanFreq)
+
+            # 绘制 scatter，使用切片 [::10] 进行降采样以防止卡顿
+            step = 10;  # ax1['d'].clear();
+            ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=5, c='#6ea6db', alpha=0.7)
+
     except IndexError:
         pass
 
