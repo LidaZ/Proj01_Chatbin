@@ -112,7 +112,7 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-zSlice = [354, 354]  # manual z slicing range to select depth region for computing viability
+zSlice = [327, 329]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.35
 viabilityThreshold = 0.18
 VolFlip = False
@@ -133,19 +133,20 @@ cropCube = np.zeros([dim_z, dim_y, dim_x], dtype=int)
 model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
 zSliceList = np.linspace(zSlice[0], zSlice[1], zSlice[1]-zSlice[0]+1).astype('int')
 
-fig1 = plt.figure(10, figsize=(9, 7));  plt.clf()
-# # fig1.canvas.manager.window.attributes('-topmost', 1);  fig1.canvas.manager.window.attributes('-topmost', 0)
-# # fig1.subplots_adjust(bottom=0, top=1, left=0, right=1)
-ax1 = fig1.subplot_mosaic("abc;ddd")
-ax1['a'].title.set_text('Drag rectangle to select ROI from dOCT')
-ax1['b'].title.set_text('After manual cropping')
-ax1['c'].title.set_text('Segmentation mask')
+if 'fig1' in globals():  pass  # plt.clf()  # pass
+else:
+    fig1 = plt.figure(1, figsize=(9, 7))
+    ax1 = fig1.subplot_mosaic("abc;dd.")
+    ax1['a'].title.set_text('Drag rectangle to select ROI from dOCT')
+    ax1['b'].title.set_text('After manual cropping')
+    ax1['c'].title.set_text('Segmentation mask')
 if bivariate_mode is False:
     ax1['d'].set_ylabel('Viable fraction');  ax1['d'].set_xlabel('En-face slice at depth (um)')
     ax1['d'].set_ylim([-0.01, 1.02]);  ax1['d'].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
     ax1['d'].set_xlim([0, len(zSliceList)*2]);
 elif bivariate_mode is True:
-    ax1['d'].set_xlabel('Mean frequency (Hz)');  ax1['d'].set_ylabel('LIV (dB^2)')
+    ax1['d'].set_xlabel('Mean frequency (Hz)');  ax1['d'].set_ylabel('LIV (dB$^2$)')
+    # ax1['d'].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1], [0, 2, 4, 6, 8, 10])  # rescale from mLIV (dB) to LIV (dB^2)
 
 # # # draw rectangles at the first and last frames, and the overlapping cubic is the 3D ROI for viability (volume fraction) computation
 frameIndex = zSliceList[0]
@@ -242,7 +243,9 @@ for frameIndex in zSliceList:
             valid_mask = ~np.isnan(y_Liv) & ~np.isnan(x_meanFreq)
 
             # 绘制 scatter，使用切片 [::10] 进行降采样以防止卡顿
-            step = 10;   # ax1['d'].clear();
+            step = 30;   # ax1['d'].clear();
+            # ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=7, c='green', marker='o', alpha=0.4)
+            # ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=8, c='red', marker='x', alpha=0.4)
             x_vals = x_meanFreq[valid_mask][::step]
             y_vals = y_Liv[valid_mask][::step]
             mask_green = y_vals > viabilityThreshold
