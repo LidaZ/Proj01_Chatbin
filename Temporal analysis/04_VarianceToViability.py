@@ -116,7 +116,7 @@ zSlice = [327, 329]  # manual z slicing range to select depth region for computi
 intThreshold = 0.35
 viabilityThreshold = 0.18
 VolFlip = False
-bivariate_mode = True  # enalbe bivariate analysis using mean frenquency and (modified) LIV
+bivariate_mode = False  # enalbe bivariate analysis using mean frenquency and (modified) LIV
 # viaIntThreshold = 13  # bullshit threshold on intensity to compute viability
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_LIV.tif")])

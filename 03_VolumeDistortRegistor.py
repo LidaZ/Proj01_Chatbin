@@ -163,7 +163,8 @@ del raw_data
 DataId = os.path.basename(stack_file_path)
 root = os.path.dirname(stack_file_path)
 
+try:     volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_meanFreq.tif'), offSetMap, picker)
+except FileNotFoundError:     print('Mean frequency mode is off, skip saving raw data.')
 volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_LIV_raw.tif'), offSetMap, picker)
 volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_LIV.tif'), offSetMap, picker)
-volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_meanFreq.tif'), offSetMap, picker)
 volumeRegistor((root + '/' + DataId[:-12] + '_3d_view.tif'), offSetMap, picker)

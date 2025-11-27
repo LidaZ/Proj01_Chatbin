@@ -49,10 +49,11 @@ rasterRepeat = 16
 rasterRepeat_cal = rasterRepeat
 sys_ivs800 = True
 saveImg = True
+bivariate_mode = False
 
 ### Image processing parameters ###
 multiFolderProcess = True  # if multiple data folders
-var_range_ToHue = [0., 1]  # LIV (variance): 0~10 / LIV_norm: 0~0.13
+var_range_ToHue = [0., 1]  # LIV (variance): 0~6 / LIV_norm: 0~0.13
 meanFreq_range_ToSat = [0.5, 2.5]
 if sys_ivs800: octRangedB = [-2, 10]  # [-5, 20]
 else: octRangedB = [0, 50]  # set dynamic range of log OCT signal display
@@ -102,8 +103,8 @@ for FileId in range(FileNum):
     # # # - - - initialize variance-to-rgb array, define the display variance range - - - # # #
     batchList = np.linspace(0, dim_y, int(dim_y/rasterRepeat), endpoint=False)
     varRgbImg = np.zeros((dim_y_raster, dim_z, dim_x, 3), 'uint8')
-    meanFreqImg = np.zeros((dim_y_raster, dim_z, dim_x), 'float32')
     varRawImg = np.zeros((dim_y_raster, dim_z, dim_x), 'float32')
+    meanFreqImg = np.zeros((dim_y_raster, dim_z, dim_x), 'float32') if bivariate_mode else None
 
     if 'fig1' in globals(): pass
     else:
@@ -113,7 +114,7 @@ for FileId in range(FileNum):
     sys.stdout.write('\n')
     sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': ' + str(FileId + 1) + '/' + str(FileNum))
 
-    # dim_y_raster = 2
+    # dim_y_raster = 12
     for batch_id in range(dim_y_raster):
         # # # - - - disable DC component filter function for now - - - # # #
         rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id * rasterRepeat + errorShiftFrame + rasterRepeat_cal), :, :]  # [32(y), 300(z), 256(x)]
@@ -128,9 +129,9 @@ for FileId in range(FileNum):
         # plt.figure(13); plt.clf(); plt.imshow(batchProj_valMax, cmap='gray')
 
 
-        # # # - - - compute variance/std/freq at each pix > Hue - - - # # #
+        # # # - - - *compute variance/std/freq at each pix > Hue - - - # # #
         batchProj_var = np.var(rawDat_batch_log, axis=0)  # LIV: linear > log > variance. typical display range: (0, 146) > (0, 10)
-        # batchProj_var_norm = batchProj_var  # LIV (dB^2); typical display range: (0, 10)
+        # batchProj_var_norm = batchProj_var  # LIV (dB^2); typical display range: (0, 6)
         batchProj_var_norm = batchProj_var / batchProj_maxInt  # Modified-LIV (dB); typical display range: (0, 1.)
         # batchProj_var_norm = batchProj_var / (batchProj_maxInt ** 2)  # Normalized LIV (a.u.); typical display range: (0, 1.3)
         batchProj_varHue_clip = np.multiply(np.clip(
@@ -138,59 +139,63 @@ for FileId in range(FileNum):
 
 
         # # # - - - compute mean frequency of each B-scan (from normalized power spectral density) > saturation- - - # # #
-        fft_scale = 4;        seg_size = rasterRepeat_cal;        overlap_size = seg_size / 2
-        # # - - - compute normalized power spectral density and mean frequency for all pixels in the Z-X plane - - - # # #
-        t_len, z_len, x_len = rawDat_batch.shape  # rawDat_batch: shape [time, Z, X]
-        linearIntRecord_all = rawDat_batch.reshape(t_len, -1)  # reshape to [time, N_pixel]
-        freq_bins, psd_all = welch(linearIntRecord_all, fs=frames_per_second, nperseg=seg_size, noverlap=overlap_size,
-                                   window="hann", nfft=t_len * fft_scale, scaling="density", detrend=False, average="median",
-                                   axis=0)  # psd_all: shape [n_freq, N_pixel]
-        psd_sum = np.sum(psd_all, axis=0, keepdims=True)  # shape [n_freq, N_pixel] -> [1, N_pixel]
-        psd_sum[psd_sum == 0] = 1.0  # set power over spectrum as 1 when computed as 0, to avoid dividing by 0 in norm
-        psd_norm_all = psd_all / psd_sum  # L1 normalize PSD at each pixel. Ref: doi.org/10.1038/s41377-020-00375-8
-        freq_mean_all = freq_bins @ psd_norm_all  # freq_bins: [n_freq], psd_norm_all: [n_freq, N_pixel]
-        freq_mean_map = freq_mean_all.reshape(z_len, x_len)  # reshape 回 (Z, X)，得到整幅图的 freq_mean 分布
-        batchProj_meanFreqSat_clip = np.clip((freq_mean_map - meanFreq_range_ToSat[0]) / (meanFreq_range_ToSat[1] - meanFreq_range_ToSat[0]), 0, 1)
+        if not bivariate_mode:
+            ch_saturation = np.ones_like(batchProj_varHue_clip)
+            freq_mean_map = None
+        else:
+            fft_scale = 4;        seg_size = rasterRepeat_cal;        overlap_size = seg_size / 2
+            # # - - - compute normalized power spectral density and mean frequency for all pixels in the Z-X plane - - - # # #
+            t_len, z_len, x_len = rawDat_batch.shape  # rawDat_batch: shape [time, Z, X]
+            linearIntRecord_all = rawDat_batch.reshape(t_len, -1)  # reshape to [time, N_pixel]
+            freq_bins, psd_all = welch(linearIntRecord_all, fs=frames_per_second, nperseg=seg_size, noverlap=overlap_size,
+                                       window="hann", nfft=t_len * fft_scale, scaling="density", detrend=False, average="median",
+                                       axis=0)  # psd_all: shape [n_freq, N_pixel]
+            psd_sum = np.sum(psd_all, axis=0, keepdims=True)  # shape [n_freq, N_pixel] -> [1, N_pixel]
+            psd_sum[psd_sum == 0] = 1.0  # set power over spectrum as 1 when computed as 0, to avoid dividing by 0 in norm
+            psd_norm_all = psd_all / psd_sum  # L1 normalize PSD at each pixel. Ref: doi.org/10.1038/s41377-020-00375-8
+            freq_mean_all = freq_bins @ psd_norm_all  # freq_bins: [n_freq], psd_norm_all: [n_freq, N_pixel]
+            freq_mean_map = freq_mean_all.reshape(z_len, x_len)  # reshape 回 (Z, X)，得到整幅图的 freq_mean 分布
+            batchProj_meanFreqSat_clip = np.clip((freq_mean_map - meanFreq_range_ToSat[0]) / (meanFreq_range_ToSat[1] - meanFreq_range_ToSat[0]), 0, 1)
+            ch_saturation = batchProj_meanFreqSat_clip
 
-
-        # # # - - - check int fluctuation profile / normalized power spectral density at a designated pixel - - - # # #
-        # pix_loc = [438, 106]  # [Z_index, X_index]  # 动：[354, 116]  静：[344, 118]
-        # linearIntRecord = rawDat_batch[:, pix_loc[0], pix_loc[1]]
-        # # t = np.linspace(0, computeRasterRepeat / frames_per_second, computeRasterRepeat)  # sin wave for plot test
-        # # freq_simulate = 5;   linearIntRecord = 1 * np.sin(2 * np.pi * freq_simulate * t) + 1
-        # length_fft = round(len(linearIntRecord) / 2)
-        #
-        # freq_bins, psd = welch(linearIntRecord, fs=frames_per_second, nperseg=seg_size, noverlap=overlap_size, window='hann',
-        #                        nfft=len(linearIntRecord)*fft_scale, scaling='density', detrend=False, average='median')
-        # # # # welch适合多采样点，牺牲部分频率分辨率换来更好的抗误差
-        # # freq_bins, psd = periodogram(linearIntRecord, frames_per_second, window='hann',
-        # #                              nfft=len(linearIntRecord)*fft_scale, scaling='density')
-        # # psd_dB = 10 * np.log10((psd+1) / (0 + 1))  # noisefloor_dB = 0, avoid 0/0 in dB scale
-        # psd_norm = psd / np.sum(psd)  # L1 normalized psd, its sum over all frequencies (freq_bins) is 1.
-        # freq_mean = psd_norm.dot(freq_bins)
-        #
-        # fig1 = plt.figure(14, figsize=(7, 7));  plt.clf()
-        # ax1 = fig1.subplot_mosaic("a;b")
-        # ax1['a'].cla();     ax1['a'].plot(linearIntRecord)
-        # ax1['a'].set_xlim(xmin=0)
-        # ax1['a'].set_xticks([0, length_fft, length_fft*2], ["0", f"{(length_fft/frames_per_second):.1f}", f"{(2 * length_fft/frames_per_second):.1f}"])
-        # ax1['a'].set_xlabel('Time (s)'); ax1['a'].set_ylabel('Linear intensity (a.u.)')  # 0 => noise floor
-        # ax1['b'].cla();     # ax1['b'].set_xlim(xmin=0)
-        # # ax1['b'].fill_between(freq_bins, psd_norm, color='gray', alpha=0.5);  ax1['b'].set_ylim([0, 0.5])  # 画L1 normalized PSD
-        # ax1['b'].fill_between(freq_bins, psd, color='gray', alpha=0.5);  ax1['b'].set_ylim(0, psd.max().round())  # 直接画PSD，总能量和光强int线性相关
-        # ax1['b'].set_xlabel('Frequency (Hz)')
-        # ax1['b'].set_ylabel('L1 Norm PSD (a.u.)')
-        # ax1['b'].axvline(x=freq_mean, color='r', linestyle='--', label=f'Mean freq: {freq_mean:.1f} Hz')
-        # ax1['b'].legend()
+            # # # - - - check int fluctuation profile / normalized power spectral density at a designated pixel - - - # # #
+            # pix_loc = [438, 106]  # [Z_index, X_index]  # 动：[354, 116]  静：[344, 118]
+            # linearIntRecord = rawDat_batch[:, pix_loc[0], pix_loc[1]]
+            # # t = np.linspace(0, computeRasterRepeat / frames_per_second, computeRasterRepeat)  # sin wave for plot test
+            # # freq_simulate = 5;   linearIntRecord = 1 * np.sin(2 * np.pi * freq_simulate * t) + 1
+            # length_fft = round(len(linearIntRecord) / 2)
+            #
+            # freq_bins, psd = welch(linearIntRecord, fs=frames_per_second, nperseg=seg_size, noverlap=overlap_size, window='hann',
+            #                        nfft=len(linearIntRecord)*fft_scale, scaling='density', detrend=False, average='median')
+            # # # # welch适合多采样点，牺牲部分频率分辨率换来更好的抗误差
+            # # freq_bins, psd = periodogram(linearIntRecord, frames_per_second, window='hann',
+            # #                              nfft=len(linearIntRecord)*fft_scale, scaling='density')
+            # # psd_dB = 10 * np.log10((psd+1) / (0 + 1))  # noisefloor_dB = 0, avoid 0/0 in dB scale
+            # psd_norm = psd / np.sum(psd)  # L1 normalized psd, its sum over all frequencies (freq_bins) is 1.
+            # freq_mean = psd_norm.dot(freq_bins)
+            #
+            # fig1 = plt.figure(14, figsize=(7, 7));  plt.clf()
+            # ax1 = fig1.subplot_mosaic("a;b")
+            # ax1['a'].cla();     ax1['a'].plot(linearIntRecord)
+            # ax1['a'].set_xlim(xmin=0)
+            # ax1['a'].set_xticks([0, length_fft, length_fft*2], ["0", f"{(length_fft/frames_per_second):.1f}", f"{(2 * length_fft/frames_per_second):.1f}"])
+            # ax1['a'].set_xlabel('Time (s)'); ax1['a'].set_ylabel('Linear intensity (a.u.)')  # 0 => noise floor
+            # ax1['b'].cla();     # ax1['b'].set_xlim(xmin=0)
+            # # ax1['b'].fill_between(freq_bins, psd_norm, color='gray', alpha=0.5);  ax1['b'].set_ylim([0, 0.5])  # 画L1 normalized PSD
+            # ax1['b'].fill_between(freq_bins, psd, color='gray', alpha=0.5);  ax1['b'].set_ylim(0, psd.max().round())  # 直接画PSD，总能量和光强int线性相关
+            # ax1['b'].set_xlabel('Frequency (Hz)')
+            # ax1['b'].set_ylabel('L1 Norm PSD (a.u.)')
+            # ax1['b'].axvline(x=freq_mean, color='r', linestyle='--', label=f'Mean freq: {freq_mean:.1f} Hz')
+            # ax1['b'].legend()
 
 
         # # # - - - convert to hue color space - - - # # #
         batchProj_rgb = hsv_to_rgb(np.transpose([batchProj_varHue_clip,
-                                                 batchProj_meanFreqSat_clip,
+                                                 ch_saturation,
                                                  batchProj_valMax_clip]))  # [varProj_hue, varProj_sat/_val, varProj_val]  # [batchProj_varHue, np.ones_like(batchProj_varHue), batchProj_valMax_clip]
         varRgbImg[batch_id, :, :, :] = np.swapaxes(batchProj_rgb, 0, 1) * 255
         varRawImg[batch_id, :, :] = batchProj_var_norm
-        meanFreqImg[batch_id, :, :] = freq_mean_map
+        if bivariate_mode:  meanFreqImg[batch_id, :, :] = freq_mean_map
 
 
         # # # - - - fresh progress bar display - - - # # #
@@ -210,4 +215,5 @@ for FileId in range(FileNum):
     if saveImg:
         tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'LIV.tif', varRgbImg)
         tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'LIV_raw.tif', varRawImg)
-        tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'meanFreq.tif', meanFreqImg)
+        try: tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + 'meanFreq.tif', meanFreqImg)
+        except: pass
