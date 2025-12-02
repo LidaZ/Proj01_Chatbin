@@ -136,7 +136,7 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
 zSlice = [327, 328]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.35
 viabilityThreshold = 0.18
-bivariate_mode = True  # Enalbe bivariate analysis using mean frenquency and (modified) LIV
+bivariate_mode = False  # Enalbe bivariate analysis using mean frenquency and (modified) LIV
 manual_pick = False  # Enable manual pixel labeling on ax1['a']. Automatic display all masked pixels when set to False.
 # viaIntThreshold = 13  # bullshit threshold on intensity to compute viability
 VolFlip = False
