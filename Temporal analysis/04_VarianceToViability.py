@@ -112,32 +112,32 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-def on_m_click(event):
-    if event.inaxes == ax1['a']:
-        if event.button is MouseButton.LEFT:
-            pts_lime.append((int(event.xdata), int(event.ydata)))
-            ax1['a'].plot(event.xdata, event.ydata, 'g+')
-        elif event.button is MouseButton.RIGHT:
-            pts_magenta.append((int(event.xdata), int(event.ydata)))
-            ax1['a'].plot(event.xdata, event.ydata, 'm+')
-        fig1.canvas.draw()
-
-def on_m_key(event):
-    global picking, manual_pick
-    if event.key == 'enter':
-        picking = False
-        manual_pick = None
-
-def on_close(event):
-    global picking, manual_pick
-    picking = False
-    manual_pick = None
+# def on_m_click(event):
+#     if event.inaxes == ax1['a']:
+#         if event.button is MouseButton.LEFT:
+#             pts_lime.append((int(event.xdata), int(event.ydata)))
+#             ax1['a'].plot(event.xdata, event.ydata, 'g+')
+#         elif event.button is MouseButton.RIGHT:
+#             pts_magenta.append((int(event.xdata), int(event.ydata)))
+#             ax1['a'].plot(event.xdata, event.ydata, 'm+')
+#         fig1.canvas.draw()
+#
+# def on_m_key(event):
+#     global picking, manual_pick
+#     if event.key == 'enter':
+#         picking = False
+#         manual_pick = None
+#
+# def on_close(event):
+#     global picking, manual_pick
+#     picking = False
+#     manual_pick = None
 
 zSlice = [327, 329]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.35
 viabilityThreshold = 0.18
 bivariate_mode = True  # Enalbe bivariate analysis using mean frenquency and (modified) LIV
-manual_pick = False  # Enable manual pixel labeling on ax1['a']. Automatic display all masked pixels when set to False.
+manual_pick = True  # Enable manual pixel labeling on ax1['a']. Automatic display all masked pixels when set to False.
 # viaIntThreshold = 13  # bullshit threshold on intensity to compute viability
 VolFlip = False
 
@@ -282,6 +282,24 @@ for frameIndex in zSliceList:
             print(f"Frame {frameIndex}: Manual labeling. Left-click to mark 'livng' as green; right-click to mark 'dead' as red. 'Enter' to complete.")
             pts_lime.clear();  pts_magenta.clear()
             picking = True
+            def on_m_click(event):
+                if event.inaxes == ax1['a']:
+                    if event.button is MouseButton.LEFT:
+                        pts_lime.append((int(event.xdata), int(event.ydata)))
+                        ax1['a'].plot(event.xdata, event.ydata, 'g+')
+                    elif event.button is MouseButton.RIGHT:
+                        pts_magenta.append((int(event.xdata), int(event.ydata)))
+                        ax1['a'].plot(event.xdata, event.ydata, 'm+')
+                    fig1.canvas.draw()
+            def on_m_key(event):
+                global picking, manual_pick
+                if event.key == 'enter':
+                    picking = False
+                    manual_pick = None
+            def on_close(event):
+                global picking, manual_pick
+                picking = False
+                manual_pick = None
             cid_m_c = fig1.canvas.mpl_connect('button_press_event', on_m_click)
             cid_m_k = fig1.canvas.mpl_connect('key_press_event', on_m_key)
             cid_close = fig1.canvas.mpl_connect('close_event', on_close)
