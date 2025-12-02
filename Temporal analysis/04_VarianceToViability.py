@@ -112,31 +112,53 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
+def on_m_click(event):
+    if event.inaxes == ax1['a']:
+        if event.button is MouseButton.LEFT:
+            pts_lime.append((int(event.xdata), int(event.ydata)))
+            ax1['a'].plot(event.xdata, event.ydata, 'g+')
+        elif event.button is MouseButton.RIGHT:
+            pts_magenta.append((int(event.xdata), int(event.ydata)))
+            ax1['a'].plot(event.xdata, event.ydata, 'm+')
+        fig1.canvas.draw()
+
+def on_m_key(event):
+    global picking, manual_pick
+    if event.key == 'enter':
+        picking = False
+        manual_pick = None
+
+def on_close(event):
+    global picking, manual_pick
+    picking = False
+    manual_pick = None
+
 zSlice = [327, 329]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.35
 viabilityThreshold = 0.18
-VolFlip = False
-bivariate_mode = False  # enalbe bivariate analysis using mean frenquency and (modified) LIV
+bivariate_mode = True  # Enalbe bivariate analysis using mean frenquency and (modified) LIV
+manual_pick = False  # Enable manual pixel labeling on ax1['a']. Automatic display all masked pixels when set to False.
 # viaIntThreshold = 13  # bullshit threshold on intensity to compute viability
+VolFlip = False
 
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True); stackFilePath = filedialog.askopenfilename(filetypes=[("", "*_LIV.tif")])
 DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath);  tk.destroy()
 print('Loading fileID: ' + stackFilePath)
 
-# # # # - - - read size of tiff stack - - - # # #
+#todo:  read size of tiff stack
 if VolFlip:  rawDat = tifffile.imread(stackFilePath)
 else:
     memmap_rawDat = tifffile.memmap(stackFilePath, mode='r')
-    rawDat = np.swapaxes(memmap_rawDat, 0, 1)   # load linear intensity data from stack. Dimension (Y, Z, X)
-dim_z, dim_y, dim_x = np.shape(rawDat)[0:3]  # [dim_y, dim_z, dim_x] original dimensions before applying AutoRotateMacro.ijm
+    rawDat = np.swapaxes(memmap_rawDat, 0, 1)   #todo: load linear intensity data from stack. Dimension (Y, Z, X)
+dim_z, dim_y, dim_x = np.shape(rawDat)[0:3]  #todo: [dim_y, dim_z, dim_x] original dimensions before applying AutoRotateMacro.ijm
 cropCube = np.zeros([dim_z, dim_y, dim_x], dtype=int)
 model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
 zSliceList = np.linspace(zSlice[0], zSlice[1], zSlice[1]-zSlice[0]+1).astype('int')
 
 if 'fig1' in globals():  pass  # plt.clf()  # pass
 else:
-    fig1 = plt.figure(1, figsize=(9, 7))
-    ax1 = fig1.subplot_mosaic("abc;dd.")
+    fig1 = plt.figure(1, figsize=(9, 6))
+    ax1 = fig1.subplot_mosaic("aab;aac;aad")
     ax1['a'].title.set_text('Drag rectangle to select ROI from dOCT')
     ax1['b'].title.set_text('After manual cropping')
     ax1['c'].title.set_text('Segmentation mask')
@@ -144,23 +166,23 @@ if bivariate_mode is False:
     ax1['d'].set_ylabel('Viable fraction');  ax1['d'].set_xlabel('En-face slice at depth (um)')
     ax1['d'].set_ylim([-0.01, 1.02]);  ax1['d'].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
     ax1['d'].set_xlim([0, len(zSliceList)*2]);
-elif bivariate_mode is True:
+else:
     ax1['d'].set_xlabel('Mean frequency (Hz)');  ax1['d'].set_ylabel('LIV (dB$^2$)')
     # ax1['d'].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1], [0, 2, 4, 6, 8, 10])  # rescale from mLIV (dB) to LIV (dB^2)
 
-# # # draw rectangles at the first and last frames, and the overlapping cubic is the 3D ROI for viability (volume fraction) computation
+#todo: draw rectangles at the first and last frames, and the overlapping cubic is the 3D ROI for viability (volume fraction) computation
 frameIndex = zSliceList[0]
 firstFrameCord = drawRectFromFrame(ax1['a'], fig1, rawDat, frameIndex)
 frameIndex = zSliceList[-1]
 lastFrameCord = drawRectFromFrame(ax1['a'], fig1, rawDat, frameIndex)
 
-# # # create 3D mask from the two rectangles' coordinates
+#todo: create 3D mask from the two rectangles' coordinates
 overlapRect = findOverlapRect(firstFrameCord, lastFrameCord)
 # overlapRect = findOverlapRect([(2, 1), (2, 237), (254, 1), (254, 237)], [(3, 3), (3, 197), (251, 3), (251, 197)])
 cropCube[:, overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = 1  # dim_z, dim_y, dim_x
 
-# # load linear intensity stack, apply cropCube, denoising using Cellpose v3, apply intThreshold to segment cell regions
-# # 3D version is only for test visualize, a 2D version is preferred which is supposed to work with an en-face image stack
+#todo: load linear intensity stack, apply cropCube, denoising using Cellpose v3, apply intThreshold to segment cell regions.
+# 3D version is only for test visualize, a 2D version is preferred which is supposed to work with an en-face image stack
 linIntFilePath = root + '/' + DataId[:-15] + '_3d_view.tif'
 rawLivFilePath = root + '/' + DataId[:-15] + '_IntImg_LIV_raw.tif'
 if bivariate_mode:  meanFreqFilePath = root + '/' + DataId[:-15] + '_IntImg_meanFreq.tif'
@@ -168,6 +190,7 @@ if bivariate_mode:  meanFreqFilePath = root + '/' + DataId[:-15] + '_IntImg_mean
 
 viabilityList = [];  viaList = [];  totalList = []
 tmpList = []
+pts_lime = [];  pts_magenta = []
 if VolFlip is not True:
     memmap_logInt = tifffile.memmap(linIntFilePath, mode='r')
     memmap_rawLiv = tifffile.memmap(rawLivFilePath, mode='r')
@@ -197,7 +220,7 @@ for frameIndex in zSliceList:
         else:
             ax1['c'].clear();  ax1['c'].imshow(frameMask, cmap='gray')  # Fallback to show mask in grayscale if input is not RGB
 
-        # # # apply frameMask to rawLIV en-face image
+        #todo: apply frameMask to rawLIV en-face image
         if VolFlip:  rawLivFrame = tifffile.imread(rawLivFilePath, key=frameIndex)
         else:  rawLivFrame = memmap_rawLiv[:, frameIndex, :]
         rawLivFrame_mask = rawLivFrame * frameMask
@@ -229,29 +252,49 @@ for frameIndex in zSliceList:
 
         viabilityList.append(viability)
         viaList.append(cntLiving);  totalList.append(cntAllPix)
-        if bivariate_mode is False:
-            ax1['d'].scatter((frameIndex-zSliceList[0])*2, viability, color='#6ea6db', marker='o', s=7)  # , np.mean(viabilityList)
-        else:
-            # # # - - - Create two-way ANOVA plot using (modified) LIV and mean frequency - - - # # #
+        if bivariate_mode:
             meafreqFrame = memmap_meanFreq[:, frameIndex, :]
             meafreqFrame_mask = meafreqFrame * frameMask
             meafreqFrame_mask[meafreqFrame_mask == 0] = np.nan
             ax1['c'].clear();  ax1['c'].imshow(meafreqFrame_mask, cmap='hot')
-            # 提取非nan元素, 找到两者都不为nan的索引
+        else:
+            ax1['d'].scatter((frameIndex - zSliceList[0]) * 2, viability, color='#6ea6db', marker='o', s=7)
+            manual_pick = False
+
+        #todo: Scatter plot of all masked pixels (sparse factor to reduce drawing burden) using (modified) LIV and mean frequency
+        if (manual_pick is False) and (bivariate_mode is True):
             y_Liv = rawLivFrame_mask.flatten()
             x_meanFreq = meafreqFrame_mask.flatten() # - 0.7
             valid_mask = ~np.isnan(y_Liv) & ~np.isnan(x_meanFreq)
-
-            # 绘制 scatter，使用切片 [::10] 进行降采样以防止卡顿
-            step = 30;   # ax1['d'].clear();
+            # # # (1) 所有mask点绘制 scatter，使用切片 [::10] 进行降采样以防止卡顿
+            step = 50;   # ax1['d'].clear();
             # ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=7, c='green', marker='o', alpha=0.4)
             # ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=8, c='red', marker='x', alpha=0.4)
+            # # (2) 或者自动根据viabilityThreshold的值设定scatter style
             x_vals = x_meanFreq[valid_mask][::step]
             y_vals = y_Liv[valid_mask][::step]
             mask_green = y_vals > viabilityThreshold
             mask_red = y_vals <= viabilityThreshold
             ax1['d'].scatter(x_vals[mask_green], y_vals[mask_green], s=7, c='green', marker='o', alpha=0.6)  # 绿色点使用圆点 'o'
             ax1['d'].scatter(x_vals[mask_red], y_vals[mask_red], s=7, c='red', marker='x', alpha=0.6)  # 红色点使用叉号 'x'
+        #todo: Manual pick for scatter plot
+        elif manual_pick:
+            print(f"Frame {frameIndex}: Manual labeling. Left-click to mark 'livng' as green; right-click to mark 'dead' as red. 'Enter' to complete.")
+            pts_lime.clear();  pts_magenta.clear()
+            picking = True
+            cid_m_c = fig1.canvas.mpl_connect('button_press_event', on_m_click)
+            cid_m_k = fig1.canvas.mpl_connect('key_press_event', on_m_key)
+            cid_close = fig1.canvas.mpl_connect('close_event', on_close)
+            while picking: plt.pause(0.5)
+            fig1.canvas.mpl_disconnect(cid_m_c);  fig1.canvas.mpl_disconnect(cid_m_k)
+            for pts, color, marker, kwargs in [(pts_lime, 'lime', 'o', {'edgecolors': 'k'}), (pts_magenta, 'magenta', 'x', {'linewidths': 2})]:
+                if pts:
+                    m_pts = np.array(pts)
+                    m_y, m_x = m_pts[:, 1], m_pts[:, 0]
+                    valid_m = (m_y >= 0) & (m_y < rawLivFrame.shape[0]) & (m_x >= 0) & (m_x < rawLivFrame.shape[1])
+                    m_y, m_x = m_y[valid_m], m_x[valid_m]
+                    ax1['d'].scatter(meafreqFrame[m_y, m_x], rawLivFrame[m_y, m_x], s=40, c=color, marker=marker, zorder=20, **kwargs)
+            fig1.canvas.draw()
 
     except IndexError:
         pass
