@@ -133,11 +133,11 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
 #     picking = False
 #     manual_pick = None
 
-zSlice = [327, 329]  # manual z slicing range to select depth region for computing viability
+zSlice = [327, 328]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.35
 viabilityThreshold = 0.18
 bivariate_mode = True  # Enalbe bivariate analysis using mean frenquency and (modified) LIV
-manual_pick = True  # Enable manual pixel labeling on ax1['a']. Automatic display all masked pixels when set to False.
+manual_pick = False  # Enable manual pixel labeling on ax1['a']. Automatic display all masked pixels when set to False.
 # viaIntThreshold = 13  # bullshit threshold on intensity to compute viability
 VolFlip = False
 
@@ -266,17 +266,18 @@ for frameIndex in zSliceList:
             y_Liv = rawLivFrame_mask.flatten()
             x_meanFreq = meafreqFrame_mask.flatten() # - 0.7
             valid_mask = ~np.isnan(y_Liv) & ~np.isnan(x_meanFreq)
+            sparse_plot_number = 50
+            step = np.round(len(y_Liv[valid_mask]) / sparse_plot_number).astype(int);  # ax1['d'].clear();
             # # # (1) 所有mask点绘制 scatter，使用切片 [::10] 进行降采样以防止卡顿
-            step = 50;   # ax1['d'].clear();
-            # ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=7, c='green', marker='o', alpha=0.4)
+            ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=7, c='green', marker='o', alpha=0.4)
             # ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=8, c='red', marker='x', alpha=0.4)
-            # # (2) 或者自动根据viabilityThreshold的值设定scatter style
-            x_vals = x_meanFreq[valid_mask][::step]
-            y_vals = y_Liv[valid_mask][::step]
-            mask_green = y_vals > viabilityThreshold
-            mask_red = y_vals <= viabilityThreshold
-            ax1['d'].scatter(x_vals[mask_green], y_vals[mask_green], s=7, c='green', marker='o', alpha=0.6)  # 绿色点使用圆点 'o'
-            ax1['d'].scatter(x_vals[mask_red], y_vals[mask_red], s=7, c='red', marker='x', alpha=0.6)  # 红色点使用叉号 'x'
+            # # # (2) 或者自动根据viabilityThreshold的值设定scatter style
+            # x_vals = x_meanFreq[valid_mask][::step]
+            # y_vals = y_Liv[valid_mask][::step]
+            # mask_green = y_vals > viabilityThreshold
+            # mask_red = y_vals <= viabilityThreshold
+            # ax1['d'].scatter(x_vals[mask_green], y_vals[mask_green], s=7, c='green', marker='o', alpha=0.6)  # 绿色点使用圆点 'o'
+            # ax1['d'].scatter(x_vals[mask_red], y_vals[mask_red], s=7, c='red', marker='x', alpha=0.6)  # 红色点使用叉号 'x'
         #todo: Manual pick for scatter plot
         elif manual_pick:
             print(f"Frame {frameIndex}: Manual labeling. Left-click to mark 'livng' as green; right-click to mark 'dead' as red. 'Enter' to complete.")
