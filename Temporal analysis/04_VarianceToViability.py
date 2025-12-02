@@ -168,7 +168,7 @@ if bivariate_mode is False:
     ax1['d'].set_xlim([0, len(zSliceList)*2]);
 else:
     ax1['d'].set_xlabel('Mean frequency (Hz)');  ax1['d'].set_ylabel('LIV (dB$^2$)')
-    # ax1['d'].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1], [0, 2, 4, 6, 8, 10])  # rescale from mLIV (dB) to LIV (dB^2)
+    # ax1['d'].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1], [0, 1, 2, 3, 4, 5])  # rescale from mLIV (dB) to LIV (dB^2)
 
 #todo: draw rectangles at the first and last frames, and the overlapping cubic is the 3D ROI for viability (volume fraction) computation
 frameIndex = zSliceList[0]
