@@ -24,6 +24,8 @@ import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
 import matplotlib.patches as patches
 from cellpose import denoise #, utils, io
+import mpl_scatter_density
+from matplotlib.colors import LinearSegmentedColormap
 
 
 
@@ -136,7 +138,7 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
 zSlice = [327, 328]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.35
 viabilityThreshold = 0.18
-bivariate_mode = False  # Enalbe bivariate analysis using mean frenquency and (modified) LIV
+bivariate_mode = True  # Enalbe bivariate analysis using mean frenquency and (modified) LIV
 manual_pick = False  # Enable manual pixel labeling on ax1['a']. Automatic display all masked pixels when set to False.
 # viaIntThreshold = 13  # bullshit threshold on intensity to compute viability
 VolFlip = False
@@ -150,12 +152,12 @@ if VolFlip:  rawDat = tifffile.imread(stackFilePath)
 else:
     memmap_rawDat = tifffile.memmap(stackFilePath, mode='r')
     rawDat = np.swapaxes(memmap_rawDat, 0, 1)   #todo: load linear intensity data from stack. Dimension (Y, Z, X)
-dim_z, dim_y, dim_x = np.shape(rawDat)[0:3]  #todo: [dim_y, dim_z, dim_x] original dimensions before applying AutoRotateMacro.ijm
+dim_z, dim_y, dim_x = np.shape(rawDat)[0:3]  #todo: [dim_y, dim_z, dim_x] original dimensions before applying `AutoRotateMacro.ijm`
 cropCube = np.zeros([dim_z, dim_y, dim_x], dtype=int)
 model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
 zSliceList = np.linspace(zSlice[0], zSlice[1], zSlice[1]-zSlice[0]+1).astype('int')
 
-if 'fig1' in globals():  pass  # plt.clf()  # pass
+if plt.fignum_exists(1):  pass  # plt.clf()  # pass
 else:
     fig1 = plt.figure(1, figsize=(9, 6))
     ax1 = fig1.subplot_mosaic("aab;aac;aad")
@@ -181,7 +183,7 @@ overlapRect = findOverlapRect(firstFrameCord, lastFrameCord)
 # overlapRect = findOverlapRect([(2, 1), (2, 237), (254, 1), (254, 237)], [(3, 3), (3, 197), (251, 3), (251, 197)])
 cropCube[:, overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = 1  # dim_z, dim_y, dim_x
 
-#todo: load linear intensity stack, apply cropCube, denoising using Cellpose v3, apply intThreshold to segment cell regions.
+#todo: load linear intensity stack, apply `cropCube`, denoising using `Cellpose v3`, apply `intThreshold` to segment cell regions.
 # 3D version is only for test visualize, a 2D version is preferred which is supposed to work with an en-face image stack
 linIntFilePath = root + '/' + DataId[:-15] + '_3d_view.tif'
 rawLivFilePath = root + '/' + DataId[:-15] + '_IntImg_LIV_raw.tif'
@@ -220,7 +222,7 @@ for frameIndex in zSliceList:
         else:
             ax1['c'].clear();  ax1['c'].imshow(frameMask, cmap='gray')  # Fallback to show mask in grayscale if input is not RGB
 
-        #todo: apply frameMask to rawLIV en-face image
+        #todo: apply `frameMask` to rawLIV en-face image
         if VolFlip:  rawLivFrame = tifffile.imread(rawLivFilePath, key=frameIndex)
         else:  rawLivFrame = memmap_rawLiv[:, frameIndex, :]
         rawLivFrame_mask = rawLivFrame * frameMask
@@ -266,11 +268,30 @@ for frameIndex in zSliceList:
             y_Liv = rawLivFrame_mask.flatten()
             x_meanFreq = meafreqFrame_mask.flatten() # - 0.7
             valid_mask = ~np.isnan(y_Liv) & ~np.isnan(x_meanFreq)
-            sparse_plot_number = 50
+            # # (1) 所有mask点绘制 scatter，使用切片 [::step] 进行降采样以防止卡顿
+            sparse_plot_number = 100
             step = np.round(len(y_Liv[valid_mask]) / sparse_plot_number).astype(int);  # ax1['d'].clear();
-            # # # (1) 所有mask点绘制 scatter，使用切片 [::10] 进行降采样以防止卡顿
             ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=7, c='green', marker='o', alpha=0.4)
-            # ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=8, c='red', marker='x', alpha=0.4)
+            ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=8, c='red', marker='x', alpha=0.4)
+
+            red_viridis = LinearSegmentedColormap.from_list('red_viridis', [(0, '#ffffff'),
+                           (1e-20, '#fc4747'), (0.2, '#cf3a3a'), (0.4, '#a62d2d'), (0.6, '#8f2828'),(0.8, '#631b1b'),(1, '#360f0f'),], N=256)
+            green_viridis = LinearSegmentedColormap.from_list('green_viridis', [(0, '#ffffff'), (1e-20, '#76fc74'), (0.2, '#65db63'),
+                                          (0.4, '#52b350'), (0.6, '#3e8a3d'), (0.8, '#295e29'), (1, '#1a3b19'), ], N=256)
+            white_viridis = LinearSegmentedColormap.from_list('white_viridis', [(0, '#ffffff'), (1e-20, '#440053'),
+                (0.2, '#404388'), (0.4, '#2a788e'),(0.6, '#21a784'), (0.8, '#78d151'),(1, '#fde624'),], N=256)
+            if plt.fignum_exists(2):
+                pass
+            else:
+                fig2 = plt.figure(figsize=(4, 4))
+                ax2 = fig2.add_subplot(1, 1, 1, projection='scatter_density')
+                ax2.set_xlabel('Mean frequency (Hz)')
+                ax2.set_ylabel('LIV (dB$^2$)')
+            density = ax2.scatter_density(x_meanFreq[valid_mask], y_Liv[valid_mask], cmap=white_viridis)
+            ax2.set_ylim([0, 1]);   # ax2.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1], [0, 1, 2, 3, 4, 5])
+            ax2.set_xlim([0.5, 8])
+            fig2.colorbar(density, label='Number of points per pixel')
+
             # # # (2) 或者自动根据viabilityThreshold的值设定scatter style
             # x_vals = x_meanFreq[valid_mask][::step]
             # y_vals = y_Liv[valid_mask][::step]
