@@ -154,6 +154,7 @@ for FileId in range(FileNum):
             psd_sum[psd_sum == 0] = 1.0  # set power over spectrum as 1 when computed as 0, to avoid dividing by 0 in norm
             psd_norm_all = psd_all / psd_sum  # L1 normalize PSD at each pixel. Ref: doi.org/10.1038/s41377-020-00375-8
             freq_mean_all = freq_bins @ psd_norm_all  # freq_bins: [n_freq], psd_norm_all: [n_freq, N_pixel]
+            #todo: autocorrelation to find dominant frequency: https://stackoverflow.com/questions/78089462/how-to-extract-dominant-frequency-from-numpy-array
             freq_mean_map = freq_mean_all.reshape(z_len, x_len)  # reshape 回 (Z, X)，得到整幅图的 freq_mean 分布
             batchProj_meanFreqSat_clip = np.clip((freq_mean_map - meanFreq_range_ToSat[0]) / (meanFreq_range_ToSat[1] - meanFreq_range_ToSat[0]), 0, 1)
             ch_saturation = batchProj_meanFreqSat_clip
