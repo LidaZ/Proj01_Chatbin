@@ -18,6 +18,8 @@ import os
 from tkinter import *
 from tkinter import filedialog
 import matplotlib
+from torch.utils.tensorboard.summary import histogram
+
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 # from mpl_point_clicker import clicker
@@ -114,26 +116,9 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-# def on_m_click(event):
-#     if event.inaxes == ax1['a']:
-#         if event.button is MouseButton.LEFT:
-#             pts_lime.append((int(event.xdata), int(event.ydata)))
-#             ax1['a'].plot(event.xdata, event.ydata, 'g+')
-#         elif event.button is MouseButton.RIGHT:
-#             pts_magenta.append((int(event.xdata), int(event.ydata)))
-#             ax1['a'].plot(event.xdata, event.ydata, 'm+')
-#         fig1.canvas.draw()
-#
-# def on_m_key(event):
-#     global picking, manual_pick
-#     if event.key == 'enter':
-#         picking = False
-#         manual_pick = None
-#
-# def on_close(event):
-#     global picking, manual_pick
-#     picking = False
-#     manual_pick = None
+x_meanFreq_tmp = []
+y_Liv_tmp = []
+
 
 zSlice = [327, 328]  # manual z slicing range to select depth region for computing viability
 intThreshold = 0.35
@@ -159,18 +144,18 @@ zSliceList = np.linspace(zSlice[0], zSlice[1], zSlice[1]-zSlice[0]+1).astype('in
 
 if plt.fignum_exists(1):  pass  # plt.clf()  # pass
 else:
-    fig1 = plt.figure(1, figsize=(9, 6))
-    ax1 = fig1.subplot_mosaic("aab;aac;aad")
+    fig1 = plt.figure(1, figsize=(9, 4.5))
+    ax1 = fig1.subplot_mosaic("aaabc;aaadd;aaadd", per_subplot_kw={"d": dict(projection='scatter_density')})
     ax1['a'].title.set_text('Drag rectangle to select ROI from dOCT')
     ax1['b'].title.set_text('After manual cropping')
     ax1['c'].title.set_text('Segmentation mask')
-if bivariate_mode is False:
-    ax1['d'].set_ylabel('Viable fraction');  ax1['d'].set_xlabel('En-face slice at depth (um)')
-    ax1['d'].set_ylim([-0.01, 1.02]);  ax1['d'].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
-    ax1['d'].set_xlim([0, len(zSliceList)*2]);
-else:
-    ax1['d'].set_xlabel('Mean frequency (Hz)');  ax1['d'].set_ylabel('LIV (dB$^2$)')
-    # ax1['d'].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1], [0, 1, 2, 3, 4, 5])  # rescale from mLIV (dB) to LIV (dB^2)
+    if bivariate_mode is False:
+        ax1['d'].set_ylabel('Viable fraction');  ax1['d'].set_xlabel('En-face slice at depth (um)')
+        ax1['d'].set_ylim([-0.01, 1.02]);  ax1['d'].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
+        ax1['d'].set_xlim([0, len(zSliceList)*2]);
+    else:
+        ax1['d'].set_xlabel('Mean frequency (Hz)');  ax1['d'].set_ylabel('LIV (dB$^2$)')
+        # ax1['d'].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1], [0, 1, 2, 3, 4, 5])  # rescale from mLIV (dB) to LIV (dB^2)
 
 #todo: draw rectangles at the first and last frames, and the overlapping cubic is the 3D ROI for viability (volume fraction) computation
 frameIndex = zSliceList[0]
@@ -268,37 +253,48 @@ for frameIndex in zSliceList:
             y_Liv = rawLivFrame_mask.flatten()
             x_meanFreq = meafreqFrame_mask.flatten() # - 0.7
             valid_mask = ~np.isnan(y_Liv) & ~np.isnan(x_meanFreq)
-            # # (1) 所有mask点绘制 scatter，使用切片 [::step] 进行降采样以防止卡顿
-            sparse_plot_number = 100
-            step = np.round(len(y_Liv[valid_mask]) / sparse_plot_number).astype(int);  # ax1['d'].clear();
-            ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=7, c='green', marker='o', alpha=0.4)
-            ax1['d'].scatter(x_meanFreq[valid_mask][::step], y_Liv[valid_mask][::step], s=8, c='red', marker='x', alpha=0.4)
-
-            red_viridis = LinearSegmentedColormap.from_list('red_viridis', [(0, '#ffffff'),
-                           (1e-20, '#fc4747'), (0.2, '#cf3a3a'), (0.4, '#a62d2d'), (0.6, '#8f2828'),(0.8, '#631b1b'),(1, '#360f0f'),], N=256)
-            green_viridis = LinearSegmentedColormap.from_list('green_viridis', [(0, '#ffffff'), (1e-20, '#76fc74'), (0.2, '#65db63'),
-                                          (0.4, '#52b350'), (0.6, '#3e8a3d'), (0.8, '#295e29'), (1, '#1a3b19'), ], N=256)
+            # # # (1) 所有mask点绘制 scatter，使用mpl_scatter_density
             white_viridis = LinearSegmentedColormap.from_list('white_viridis', [(0, '#ffffff'), (1e-20, '#440053'),
                 (0.2, '#404388'), (0.4, '#2a788e'),(0.6, '#21a784'), (0.8, '#78d151'),(1, '#fde624'),], N=256)
-            if plt.fignum_exists(2):
-                pass
-            else:
-                fig2 = plt.figure(figsize=(4, 4))
-                ax2 = fig2.add_subplot(1, 1, 1, projection='scatter_density')
-                ax2.set_xlabel('Mean frequency (Hz)')
-                ax2.set_ylabel('LIV (dB$^2$)')
-            density = ax2.scatter_density(x_meanFreq[valid_mask], y_Liv[valid_mask], cmap=white_viridis)
-            ax2.set_ylim([0, 1]);   # ax2.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1], [0, 1, 2, 3, 4, 5])
-            ax2.set_xlim([0.5, 8])
-            fig2.colorbar(density, label='Number of points per pixel')
+            density = ax1['d'].scatter_density(x_meanFreq[valid_mask], y_Liv[valid_mask], cmap=white_viridis)
+            ax1['d'].set_ylim([0, 1]);   # ax1['d'].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4], [0, 1, 2, 3, 4, 5, 6, 7])
+            ax1['d'].set_xlim([0.5, 8]);  # ax1['d'].set_xscale('log')
+            try:  cb.remove()
+            except NameError:  pass
+            cb = fig1.colorbar(density, ax=ax1['d'], label='Scatter density')
+            # try: cb.update_normal(density)  # fail to update colorbar automatically unless manually stretch window
+            # except NameError: cb = plt.colorbar(density, ax=ax1['d'], label='Scatter density')
 
-            # # # (2) 或者自动根据viabilityThreshold的值设定scatter style
-            # x_vals = x_meanFreq[valid_mask][::step]
-            # y_vals = y_Liv[valid_mask][::step]
-            # mask_green = y_vals > viabilityThreshold
-            # mask_red = y_vals <= viabilityThreshold
-            # ax1['d'].scatter(x_vals[mask_green], y_vals[mask_green], s=7, c='green', marker='o', alpha=0.6)  # 绿色点使用圆点 'o'
-            # ax1['d'].scatter(x_vals[mask_red], y_vals[mask_red], s=7, c='red', marker='x', alpha=0.6)  # 红色点使用叉号 'x'
+            # # # - - - choose live or dead scatters to plot in ax1['d'] - - - # # #
+            if plt.fignum_exists(2): pass
+            else:
+                fig2 = plt.figure(2, figsize=(4, 4))
+                ax2 = fig2.subplot_mosaic("111", per_subplot_kw={"1": dict(projection='scatter_density')})
+                ax2['1'].set_xlabel('Mean frequency (Hz)');
+                ax2['1'].set_ylabel('LIV (dB$^2$)')
+                ax2['1'].set_ylim([0, 1]);  # ax2['1'].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1], [0, 1, 2, 3, 4, 5])
+                ax2['1'].set_xlim([0.5, 6]);  # ax2['1'].set_xscale('log')
+
+            # x_meanFreq_live = x_meanFreq[valid_mask];  y_Liv_live = y_Liv[valid_mask]
+            # density_live = ax2['1'].scatter_density(x_meanFreq_live, y_Liv_live, color='green')
+            # # # Or
+            x_meanFreq_dead = x_meanFreq[valid_mask];  y_Liv_dead = y_Liv[valid_mask]
+            density_dead = ax2['1'].scatter_density(x_meanFreq_dead, y_Liv_dead, color='red')
+
+
+            # # # 最后一个en-face画histogram # # #
+            if frameIndex != zSliceList[-1]:  pass;
+            else:
+                metric_FreqLiv = y_Liv[valid_mask] * 5  # np.multiply(x_meanFreq[valid_mask], y_Liv[valid_mask] * 5)  # re-scale from m-LIV to LIV (rough)
+                hist_FreqLiv, bins_FreqLiv = np.histogram(metric_FreqLiv, bins=50, density=True)
+                if plt.fignum_exists(2):  pass
+                else:
+                    fig2 = plt.figure(figsize=(4, 4))
+                    ax2 = fig2.add_subplot(111)
+                ax2.hist(metric_FreqLiv, bins=bins_FreqLiv, density=True,alpha=0.4)
+                # bin_width = bins_FreqLiv[1] - bins_FreqLiv[0]
+                # percentage = np.sum(bin_width * hist_FreqLiv[np.where(bins_FreqLiv[:-1] < 0.91)])  # LIV*f_mean: 1.8; LIV: 0.9
+
         #todo: Manual pick for scatter plot
         elif manual_pick:
             print(f"Frame {frameIndex}: Manual labeling. Left-click to mark 'livng' as green; right-click to mark 'dead' as red. 'Enter' to complete.")
@@ -342,7 +338,7 @@ for frameIndex in zSliceList:
     # sys.stdout.write('\r')
     # j = (frameIndex - zSliceList[0] + 1) / len(zSliceList)
     # sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' couting viability over Zstack')
-    plt.pause(0.01)
+    plt.pause(0.1)
 
 print('Mean en-face fraction (vFrac) is: ', str(np.mean(viabilityList)))
 print('std is: ', str(np.std(viabilityList)))

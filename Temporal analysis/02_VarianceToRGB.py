@@ -49,7 +49,7 @@ rasterRepeat = 16
 rasterRepeat_cal = rasterRepeat
 sys_ivs800 = True
 saveImg = True
-bivariate_mode = False
+bivariate_mode = True
 
 ### Image processing parameters ###
 multiFolderProcess = True  # if multiple data folders
@@ -114,7 +114,7 @@ for FileId in range(FileNum):
     sys.stdout.write('\n')
     sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': ' + str(FileId + 1) + '/' + str(FileNum))
 
-    # dim_y_raster = 12
+    # dim_y_raster = 2
     for batch_id in range(dim_y_raster):
         # # # - - - disable DC component filter function for now - - - # # #
         rawDat_batch = rawDat[(batch_id*rasterRepeat+errorShiftFrame):(batch_id * rasterRepeat + errorShiftFrame + rasterRepeat_cal), :, :]  # [32(y), 300(z), 256(x)]
@@ -143,12 +143,12 @@ for FileId in range(FileNum):
             ch_saturation = np.ones_like(batchProj_varHue_clip)
             freq_mean_map = None
         else:
-            fft_scale = 4;        seg_size = rasterRepeat_cal;        overlap_size = seg_size / 2
+            fft_pad = 2;        seg_size = rasterRepeat_cal / 1;        overlap_size = seg_size / 2
             # # - - - compute normalized power spectral density and mean frequency for all pixels in the Z-X plane - - - # # #
             t_len, z_len, x_len = rawDat_batch.shape  # rawDat_batch: shape [time, Z, X]
             linearIntRecord_all = rawDat_batch.reshape(t_len, -1)  # reshape to [time, N_pixel]
             freq_bins, psd_all = welch(linearIntRecord_all, fs=frames_per_second, nperseg=seg_size, noverlap=overlap_size,
-                                       window="hann", nfft=t_len * fft_scale, scaling="density", detrend=False, average="median",
+                                       window="hann", nfft=t_len * fft_pad, scaling="density", detrend=False, average="median",
                                        axis=0)  # psd_all: shape [n_freq, N_pixel]
             psd_sum = np.sum(psd_all, axis=0, keepdims=True)  # shape [n_freq, N_pixel] -> [1, N_pixel]
             psd_sum[psd_sum == 0] = 1.0  # set power over spectrum as 1 when computed as 0, to avoid dividing by 0 in norm
@@ -159,35 +159,37 @@ for FileId in range(FileNum):
             batchProj_meanFreqSat_clip = np.clip((freq_mean_map - meanFreq_range_ToSat[0]) / (meanFreq_range_ToSat[1] - meanFreq_range_ToSat[0]), 0, 1)
             ch_saturation = batchProj_meanFreqSat_clip
 
+
             # # # - - - check int fluctuation profile / normalized power spectral density at a designated pixel - - - # # #
-            # pix_loc = [438, 106]  # [Z_index, X_index]  # 动：[354, 116]  静：[344, 118]
+            # pix_loc = [314, 110]  # [Z_index, X_index]  # 动：[366, 196]  静：[344, 191]  空: [450, 220]
             # linearIntRecord = rawDat_batch[:, pix_loc[0], pix_loc[1]]
             # # t = np.linspace(0, computeRasterRepeat / frames_per_second, computeRasterRepeat)  # sin wave for plot test
             # # freq_simulate = 5;   linearIntRecord = 1 * np.sin(2 * np.pi * freq_simulate * t) + 1
             # length_fft = round(len(linearIntRecord) / 2)
-            #
             # freq_bins, psd = welch(linearIntRecord, fs=frames_per_second, nperseg=seg_size, noverlap=overlap_size, window='hann',
-            #                        nfft=len(linearIntRecord)*fft_scale, scaling='density', detrend=False, average='median')
+            #                        nfft=len(linearIntRecord) * fft_pad, scaling='density', detrend=False, average='median')
             # # # # welch适合多采样点，牺牲部分频率分辨率换来更好的抗误差
             # # freq_bins, psd = periodogram(linearIntRecord, frames_per_second, window='hann',
-            # #                              nfft=len(linearIntRecord)*fft_scale, scaling='density')
-            # # psd_dB = 10 * np.log10((psd+1) / (0 + 1))  # noisefloor_dB = 0, avoid 0/0 in dB scale
+            # #                              nfft=len(linearIntRecord)*fft_pad, scaling='density')
             # psd_norm = psd / np.sum(psd)  # L1 normalized psd, its sum over all frequencies (freq_bins) is 1.
             # freq_mean = psd_norm.dot(freq_bins)
             #
-            # fig1 = plt.figure(14, figsize=(7, 7));  plt.clf()
-            # ax1 = fig1.subplot_mosaic("a;b")
-            # ax1['a'].cla();     ax1['a'].plot(linearIntRecord)
-            # ax1['a'].set_xlim(xmin=0)
-            # ax1['a'].set_xticks([0, length_fft, length_fft*2], ["0", f"{(length_fft/frames_per_second):.1f}", f"{(2 * length_fft/frames_per_second):.1f}"])
-            # ax1['a'].set_xlabel('Time (s)'); ax1['a'].set_ylabel('Linear intensity (a.u.)')  # 0 => noise floor
-            # ax1['b'].cla();     # ax1['b'].set_xlim(xmin=0)
-            # # ax1['b'].fill_between(freq_bins, psd_norm, color='gray', alpha=0.5);  ax1['b'].set_ylim([0, 0.5])  # 画L1 normalized PSD
-            # ax1['b'].fill_between(freq_bins, psd, color='gray', alpha=0.5);  ax1['b'].set_ylim(0, psd.max().round())  # 直接画PSD，总能量和光强int线性相关
-            # ax1['b'].set_xlabel('Frequency (Hz)')
-            # ax1['b'].set_ylabel('L1 Norm PSD (a.u.)')
-            # ax1['b'].axvline(x=freq_mean, color='r', linestyle='--', label=f'Mean freq: {freq_mean:.1f} Hz')
-            # ax1['b'].legend()
+            # fig2 = plt.figure(14, figsize=(7, 7));  plt.clf()
+            # ax2 = fig2.subplot_mosaic("a;b")
+            # ax2['a'].cla();     ax2['a'].plot(linearIntRecord)  # ax2['a'].plot(np.log10(linearIntRecord))
+            # ax2['a'].set_xlim(xmin=0)
+            # ax2['a'].set_xticks([0, length_fft, length_fft*2], ["0", f"{(length_fft/frames_per_second):.1f}", f"{(2 * length_fft/frames_per_second):.1f}"])
+            # ax2['a'].set_xlabel('Time (s)'); ax2['a'].set_ylabel('Linear intensity w/o BG (a.u.)')  # 0 => noise floor
+            # ax2['b'].cla();     # ax2['b'].set_xlim(xmin=0)
+            # # ax2['b'].fill_between(freq_bins, psd_norm, color='gray', alpha=0.5);  ax2['b'].set_ylim([0, 0.5])  # 画L1 normalized PSD
+            # ax2['b'].fill_between(freq_bins, psd_norm, color='gray', alpha=0.5)
+            # # ax2['b'].set_yscale('log')
+            # ax2['b'].set_xlim(xmin=0, xmax=freq_bins[-1])
+            # ax2['b'].set_ylim(0, 1)  #psd_norm.max())  # 直接画PSD，总能量和光强int线性相关
+            # ax2['b'].set_xlabel('Frequency (Hz)')
+            # ax2['b'].set_ylabel('L1 Norm PSD (a.u.)')
+            # ax2['b'].axvline(x=freq_mean, color='r', linestyle='--', label=f'Mean freq: {freq_mean:.1f} Hz')
+            # ax2['b'].legend()
 
 
         # # # - - - convert to hue color space - - - # # #
