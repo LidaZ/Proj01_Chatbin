@@ -18,6 +18,7 @@ import os
 from tkinter import *
 from tkinter import filedialog
 import matplotlib
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from torch.utils.tensorboard.summary import histogram
 
 matplotlib.use("Qt5Agg")
@@ -28,6 +29,7 @@ import matplotlib.patches as patches
 from cellpose import denoise #, utils, io
 import mpl_scatter_density
 from matplotlib.colors import LinearSegmentedColormap
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 
@@ -142,7 +144,7 @@ cropCube = np.zeros([dim_z, dim_y, dim_x], dtype=int)
 model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
 zSliceList = np.linspace(zSlice[0], zSlice[1], zSlice[1]-zSlice[0]+1).astype('int')
 
-if plt.fignum_exists(1):  pass  # plt.clf()  # pass
+if plt.fignum_exists(1):  fig1 = plt.figure(1)  # plt.clf()  # pass
 else:
     fig1 = plt.figure(1, figsize=(9, 4.5))
     ax1 = fig1.subplot_mosaic("aaabc;aaadd;aaadd", per_subplot_kw={"d": dict(projection='scatter_density')})
@@ -199,7 +201,7 @@ for frameIndex in zSliceList:
         cropIntFrameDn[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = cropIntFrame_seg_dn[..., 0]
         # ax1['b'].clear();  ax1['b'].imshow(cropIntFrameDn, cmap='gray')
         frameMask = cropIntFrameDn > intThreshold
-        # Display masked RGB image: keep pixels where mask is True, black elsewhere
+        #todo: display masked RGB image: keep pixels where mask is True, black elsewhere
         masked_rgb = rawDat_enfaceSlice.copy()
         if masked_rgb.ndim == 3 and masked_rgb.shape[2] >= 3:
             masked_rgb[~frameMask] = 0
@@ -265,35 +267,31 @@ for frameIndex in zSliceList:
             # try: cb.update_normal(density)  # fail to update colorbar automatically unless manually stretch window
             # except NameError: cb = plt.colorbar(density, ax=ax1['d'], label='Scatter density')
 
-            # # # - - - choose live or dead scatters to plot in ax1['d'] - - - # # #
-            if plt.fignum_exists(2): pass
-            else:
-                fig2 = plt.figure(2, figsize=(4, 4))
-                ax2 = fig2.subplot_mosaic("111", per_subplot_kw={"1": dict(projection='scatter_density')})
-                ax2['1'].set_xlabel('Mean frequency (Hz)');
-                ax2['1'].set_ylabel('LIV (dB$^2$)')
-                ax2['1'].set_ylim([0, 1]);  # ax2['1'].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1], [0, 1, 2, 3, 4, 5])
-                ax2['1'].set_xlim([0.5, 6]);  # ax2['1'].set_xscale('log')
+            #todo: use the last en-face for scatter plot with histogram - Figure 2
+            if frameIndex == zSliceList[-1]:
+                if not plt.fignum_exists(2):
+                    fig2 = plt.figure(2, figsize=(4, 4))
+                    ax2 = fig2.subplot_mosaic("111", per_subplot_kw={"1": dict(projection='scatter_density')})
+                    ax2['1'].set_xlabel('Mean frequency (Hz)');
+                    ax2['1'].set_ylabel('LIV (dB$^2$)')
+                    ax2['1'].set_ylim([0, 1]);  # ax2['1'].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1], [0, 1, 2, 3, 4, 5])
+                    ax2['1'].set_xlim([0.5, 6]);  # ax2['1'].set_xscale('log')
 
-            # x_meanFreq_live = x_meanFreq[valid_mask];  y_Liv_live = y_Liv[valid_mask]
-            # density_live = ax2['1'].scatter_density(x_meanFreq_live, y_Liv_live, color='green')
-            # # # Or
-            x_meanFreq_dead = x_meanFreq[valid_mask];  y_Liv_dead = y_Liv[valid_mask]
-            density_dead = ax2['1'].scatter_density(x_meanFreq_dead, y_Liv_dead, color='red')
+                    divider = make_axes_locatable(ax2['1'])
+                    ax_histx = divider.append_axes("top", size="25%", pad=0.01, sharex=ax2['1'])
+                    ax_histx.xaxis.set_tick_params(labelbottom=False);  ax_histx.xaxis.set_visible(False);  ax_histx.axis('off')
+                    ax_histy = divider.append_axes("right", size="25%", pad=0.01, sharey=ax2['1'])
+                    ax_histy.yaxis.set_tick_params(labelleft=False);  ax_histy.yaxis.set_visible(False);  ax_histy.axis('off')
 
+                #todo: assign color.
+                scatter_color = 'red'
+                x_meanFreq_masked = x_meanFreq[valid_mask];     y_Liv_masked = y_Liv[valid_mask]
+                density_dead = ax2['1'].scatter_density(x_meanFreq_masked, y_Liv_masked, color=scatter_color)
+                histx, bins_to_histx = np.histogram(x_meanFreq_masked, bins=50, density=True)
+                ax_histx.hist(x_meanFreq_masked, bins=bins_to_histx, density=True, alpha=0.4, color=scatter_color)
+                histy, bins_to_histy = np.histogram(y_Liv_masked, bins=50, density=True)
+                ax_histy.hist(y_Liv_masked, bins=bins_to_histy, density=True, alpha=0.4, color=scatter_color, orientation='horizontal')
 
-            # # # 最后一个en-face画histogram # # #
-            if frameIndex != zSliceList[-1]:  pass;
-            else:
-                metric_FreqLiv = y_Liv[valid_mask] * 5  # np.multiply(x_meanFreq[valid_mask], y_Liv[valid_mask] * 5)  # re-scale from m-LIV to LIV (rough)
-                hist_FreqLiv, bins_FreqLiv = np.histogram(metric_FreqLiv, bins=50, density=True)
-                if plt.fignum_exists(2):  pass
-                else:
-                    fig2 = plt.figure(figsize=(4, 4))
-                    ax2 = fig2.add_subplot(111)
-                ax2.hist(metric_FreqLiv, bins=bins_FreqLiv, density=True,alpha=0.4)
-                # bin_width = bins_FreqLiv[1] - bins_FreqLiv[0]
-                # percentage = np.sum(bin_width * hist_FreqLiv[np.where(bins_FreqLiv[:-1] < 0.91)])  # LIV*f_mean: 1.8; LIV: 0.9
 
         #todo: Manual pick for scatter plot
         elif manual_pick:
