@@ -161,7 +161,7 @@ for FileId in range(FileNum):
 
 
             # # - - - check int fluctuation profile / normalized power spectral density at a designated pixel - - - # # #
-            pix_loc = [382, 60]  # [Z_index, X_index]  # 动：[366, 196]  静：[344, 191]  空: [450, 220]
+            pix_loc = [450, 220]  # [Z_index, X_index]  # 动：[385, 52]  静：[259, 99]  空: [450, 220]
             linearIntRecord = rawDat_batch[:, pix_loc[0], pix_loc[1]]
             # t = np.linspace(0, computeRasterRepeat / frames_per_second, computeRasterRepeat)  # sin wave for plot test
             # freq_simulate = 5;   linearIntRecord = 1 * np.sin(2 * np.pi * freq_simulate * t) + 1
@@ -183,7 +183,7 @@ for FileId in range(FileNum):
 
             fig2 = plt.figure(14, figsize=(7, 7));  plt.clf()
             ax2 = fig2.subplot_mosaic("a;b")
-            ax2['a'].cla();     ax2['a'].plot(linearIntRecord)  # ax2['a'].plot(np.log10(linearIntRecord))
+            ax2['a'].cla();   ax2['a'].plot(linearIntRecord)  # ax2['a'].plot(np.log10(linearIntRecord))
             ax2['a'].set_xlim(xmin=0)
             ax2['a'].set_xticks([0, length_fft, length_fft*2], ["0", f"{(length_fft/frames_per_second):.1f}", f"{(2 * length_fft/frames_per_second):.1f}"])
             ax2['a'].set_xlabel('Time (s)'); ax2['a'].set_ylabel('Linear intensity w/o BG (a.u.)')  # 0 => noise floor
