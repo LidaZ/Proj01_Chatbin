@@ -250,7 +250,7 @@ for frameIndex in zSliceList:
             ax1['d'].scatter((frameIndex - zSliceList[0]) * 2, viability, color='#6ea6db', marker='o', s=7)
             manual_pick = False
 
-        #todo: Scatter plot of all masked pixels (sparse factor to reduce drawing burden) using (modified) LIV and mean frequency
+        #todo: Scatter plot of all masked pixels (mpl_scatter_density to reduce drawing burden) using (modified) LIV and mean frequency
         if (manual_pick is False) and (bivariate_mode is True):
             y_Liv = rawLivFrame_mask.flatten()
             x_meanFreq = meafreqFrame_mask.flatten() # - 0.7
