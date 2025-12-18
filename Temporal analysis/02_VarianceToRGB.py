@@ -147,47 +147,47 @@ for FileId in range(FileNum):
             batchProj_meanFreqSat_clip = np.clip( (freq_mean_map - meanFreq_range_ToSat[0]) / (meanFreq_range_ToSat[1] - meanFreq_range_ToSat[0]), 0, 1)
             ch_saturation = batchProj_meanFreqSat_clip
 
-            """ Check int fluctuation profile / normalized power spectral density at a designated pixel """
-            pix_loc = [385, 52]  # [Z_index, X_index]  # 动-green：[385, 52]  静-red：[259, 99]  空-gray: [400, 184]
-            plt_color = 'green'
-            linearIntRecord = rawDat_batch[:, pix_loc[0], pix_loc[1]]
-            # t = np.linspace(0, computeRasterRepeat / frames_per_second, computeRasterRepeat)  # sin wave for plot test
-            # freq_simulate = 5;   linearIntRecord = 1 * np.sin(2 * np.pi * freq_simulate * t) + 1
-            length_fft = round(len(linearIntRecord) / 2)
-            # #todo: welch psd estimation. 分割成多段算psd后平均，牺牲部分频率分辨率换来更好的抗误差，适合多采样点
-            freq_bins, psd = welch(linearIntRecord, fs=frames_per_second, nperseg=seg_size, noverlap=overlap_size, window='hann',
-                                   nfft=len(linearIntRecord) * fft_pad, scaling='density', detrend=False, average='median', return_onesided=True)
-            # #todo: periodogram psd estimation.
-            # freq_bins, psd = periodogram(linearIntRecord, frames_per_second, window='hann',
-            #                              nfft=len(linearIntRecord)*fft_pad, scaling='density', detrend=False, return_onesided=True)
-            # #todo: fft psd estimation.
-            # psd_fft = fft.fft(linearIntRecord, n=len(linearIntRecord) * fft_pad) ** 2 / (seg_size * frames_per_second)
-            # n_half = int(seg_size * fft_pad / 2 + 1)
-            # psd = np.abs(psd_fft[:n_half]) ** 2
-            # freq_bins = np.fft.rfftfreq(seg_size*fft_pad, 1 / frames_per_second)
-
-            psd_norm = psd / np.sum(psd)  # L1 normalized psd, its sum over all frequencies (freq_bins) is 1.
-            freq_mean = psd_norm.dot(freq_bins)
-            if not plt.fignum_exists(14):
-                fig2 = plt.figure(14, figsize=(5, 5));  plt.clf()
-                ax2 = fig2.subplot_mosaic("a;b");  fig2.tight_layout()
-                ax2['a'].cla()
-                ax2['a'].set_xlim(xmin=0)
-                ax2['a'].set_xticks([0, length_fft, length_fft * 2], ["0", f"{(length_fft / frames_per_second):.1f}", f"{(2 * length_fft / frames_per_second):.1f}"])
-                ax2['a'].set_xlabel('Time (s)', labelpad=0)
-                ax2['a'].set_ylabel('Linear intensity w/o BG (a.u.)')
-                ax2['b'].cla()
-                ax2['b'].set_xlim(xmin=0, xmax=freq_bins[-1])
-                ax2['b'].set_ylim(0, 1)  # psd_norm.max())  # 直接画PSD，总能量和光强int线性相关
-                ax2['b'].set_xlabel('Frequency (Hz)', labelpad=0)
-                ax2['b'].set_ylabel('L1 Norm PSD (a.u.)')
-                ax2['b'].set_yscale('log');  ax2['b'].set_ylim(0.001, 10)
-            ax2['a'].plot(linearIntRecord, color=plt_color, alpha=0.7)  # ax2['a'].plot(np.log10(linearIntRecord))
-            ax2['b'].fill_between(freq_bins, psd_norm, color=plt_color, alpha=0.3);  # ax2['b'].set_ylim([0, 0.5])  # 画L1 normalized PSD
-            ax2['b'].axvline(x=freq_mean, color=plt_color, linestyle='--', label=f'Mean freq: {freq_mean:.1f} Hz')
-            try: lgd.remove();
-            except NameError: pass
-            lgd = ax2['b'].legend()
+            # """ Check int fluctuation profile / normalized power spectral density at a designated pixel """
+            # pix_loc = [385, 52]  # [Z_index, X_index]  # 动-green：[385, 52]  静-red：[259, 99]  空-gray: [400, 184]
+            # plt_color = 'green'
+            # linearIntRecord = rawDat_batch[:, pix_loc[0], pix_loc[1]]
+            # # t = np.linspace(0, computeRasterRepeat / frames_per_second, computeRasterRepeat)  # sin wave for plot test
+            # # freq_simulate = 5;   linearIntRecord = 1 * np.sin(2 * np.pi * freq_simulate * t) + 1
+            # length_fft = round(len(linearIntRecord) / 2)
+            # # #todo: welch psd estimation. 分割成多段算psd后平均，牺牲部分频率分辨率换来更好的抗误差，适合多采样点
+            # freq_bins, psd = welch(linearIntRecord, fs=frames_per_second, nperseg=seg_size, noverlap=overlap_size, window='hann',
+            #                        nfft=len(linearIntRecord) * fft_pad, scaling='density', detrend=False, average='median', return_onesided=True)
+            # # #todo: periodogram psd estimation.
+            # # freq_bins, psd = periodogram(linearIntRecord, frames_per_second, window='hann',
+            # #                              nfft=len(linearIntRecord)*fft_pad, scaling='density', detrend=False, return_onesided=True)
+            # # #todo: fft psd estimation.
+            # # psd_fft = fft.fft(linearIntRecord, n=len(linearIntRecord) * fft_pad) ** 2 / (seg_size * frames_per_second)
+            # # n_half = int(seg_size * fft_pad / 2 + 1)
+            # # psd = np.abs(psd_fft[:n_half]) ** 2
+            # # freq_bins = np.fft.rfftfreq(seg_size*fft_pad, 1 / frames_per_second)
+            #
+            # psd_norm = psd / np.sum(psd)  # L1 normalized psd, its sum over all frequencies (freq_bins) is 1.
+            # freq_mean = psd_norm.dot(freq_bins)
+            # if not plt.fignum_exists(14):
+            #     fig2 = plt.figure(14, figsize=(5, 6));  plt.clf()
+            #     ax2 = fig2.subplot_mosaic("a;b");  fig2.tight_layout()
+            #     ax2['a'].cla()
+            #     ax2['a'].set_xlim(xmin=0)
+            #     ax2['a'].set_xticks([0, length_fft, length_fft * 2], ["0", f"{(length_fft / frames_per_second):.1f}", f"{(2 * length_fft / frames_per_second):.1f}"])
+            #     ax2['a'].set_xlabel('Time (s)', labelpad=0)
+            #     ax2['a'].set_ylabel('Linear intensity w/o BG (a.u.)')
+            #     ax2['b'].cla()
+            #     ax2['b'].set_xlim(xmin=0, xmax=freq_bins[-1])
+            #     ax2['b'].set_ylim(0, 1)  # psd_norm.max())  # 直接画PSD，总能量和光强int线性相关
+            #     ax2['b'].set_xlabel('Frequency (Hz)', labelpad=0)
+            #     ax2['b'].set_ylabel('L1 Norm PSD (a.u.)')
+            #     ax2['b'].set_yscale('log');  ax2['b'].set_ylim(0.001, 10)
+            # ax2['a'].plot(linearIntRecord, color=plt_color, alpha=0.7)  # ax2['a'].plot(np.log10(linearIntRecord))
+            # ax2['b'].fill_between(freq_bins, psd_norm, color=plt_color, alpha=0.3);  # ax2['b'].set_ylim([0, 0.5])  # 画L1 normalized PSD
+            # ax2['b'].axvline(x=freq_mean, color=plt_color, linestyle='--', label=f'Mean freq: {freq_mean:.1f} Hz')
+            # try: lgd.remove();
+            # except NameError: pass
+            # lgd = ax2['b'].legend()
 
         # #todo: convert to hue color space
         batchProj_rgb = hsv_to_rgb(np.transpose([batchProj_varHue_clip,
