@@ -53,7 +53,7 @@ bivariate_mode = True
 
 ### Image processing parameters ###
 multiFolderProcess = True  # if multiple data folders
-var_range_ToHue = [0., 1]  # LIV (variance): 0~6 / LIV_norm: 0~0.13
+var_range_ToHue = [0., 1]  # LIV (variance): 0~12 / LIV_norm: 0~0.13
 meanFreq_range_ToSat = [0.5, 2.5]
 if sys_ivs800:  octRangedB = [-2, 10]  # [-5, 20]
 else:  octRangedB = [0, 50]  # set dynamic range of log OCT signal display
@@ -128,9 +128,12 @@ for FileId in range(FileNum):
 
 
         """ Compute mean frequency of each B-scan (from normalized power spectral density) > saturation """
+        pix_loc = [355, 101]  # [Z_index, X_index]  # 动-green：[385, 52]  静-red：[259, 99]  空-gray: [400, 184]
         if not bivariate_mode:
             ch_saturation = np.ones_like(batchProj_varHue_clip)
             freq_mean_map = None
+            var_at_pixel = batchProj_var_norm[pix_loc[0], pix_loc[1]]
+            sys.stdout.write("Variance at pixel" + str(pix_loc) + ": " + str(var_at_pixel) + '\n')
         else:
             fft_pad = 2;  seg_size = int(rasterRepeat_cal / 1);  overlap_size = int(seg_size / 2)
             # #todo: compute normalized power spectral density and mean frequency for all pixels in the Z-X plane
@@ -148,7 +151,7 @@ for FileId in range(FileNum):
             ch_saturation = batchProj_meanFreqSat_clip
 
             # """ Check int fluctuation profile / normalized power spectral density at a designated pixel """
-            # pix_loc = [385, 52]  # [Z_index, X_index]  # 动-green：[385, 52]  静-red：[259, 99]  空-gray: [400, 184]
+            # # pix_loc = [440, 138]  # [Z_index, X_index]  # 动-green：[385, 52]  静-red：[259, 99]  空-gray: [400, 184]
             # plt_color = 'green'
             # linearIntRecord = rawDat_batch[:, pix_loc[0], pix_loc[1]]
             # # t = np.linspace(0, computeRasterRepeat / frames_per_second, computeRasterRepeat)  # sin wave for plot test
