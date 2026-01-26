@@ -105,7 +105,7 @@ class PickContour:
 
 def volumeRegistor(volume_path, offSetMap, picker):
     """ Apply the estimated offSetMap to register given 3D volume. """
-    volume = tifffile.imread(volume_path)
+    volume = load_full_tiffstack(volume_path)
     try:
         registered_volume = picker.fast_roll_along_z(volume, offSetMap)
         tifffile.imwrite(volume_path, registered_volume)
@@ -113,6 +113,12 @@ def volumeRegistor(volume_path, offSetMap, picker):
     except ValueError:
         raise(ValueError(f"Shape not match, ID: " + str(volume_path)))
 
+
+def load_full_tiffstack(path):
+    with tifffile.TiffFile(path) as tif:
+        num_pages = len(tif.pages)
+        volume_full = tif.asarray(key=range(num_pages), out='memmap')
+    return volume_full
 
 # # # =========================
 # # # Usage Example
@@ -124,7 +130,7 @@ stack_file_path = filedialog.askopenfilename(filetypes=[("", "*view.tif")])
 tk.destroy()
 # # # Load image
 print('Loading fileID: ' + stack_file_path)
-raw_data = tifffile.imread(stack_file_path)
+raw_data = load_full_tiffstack(stack_file_path)
 dim_y, dim_z, dim_x = raw_data.shape[0:3]
 # # # Initialize display window and picker
 picker = PickContour(contour_points=5)
@@ -169,4 +175,4 @@ try:
     volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_LIV_raw.tif'), offSetMap, picker)
     volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_LIV.tif'), offSetMap, picker)
 except FileNotFoundError:     print('No LIV data found, skip saving as image.')
-volumeRegistor((root + '/' + DataId[:-12] + '_3d_view.tif'), offSetMap, picker)
+volumeRegistor((root + '/' + DataId), offSetMap, picker)
