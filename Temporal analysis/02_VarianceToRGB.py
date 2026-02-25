@@ -1,4 +1,3 @@
-# import os
 import sys
 import numpy as np
 import numpy.fft as fft
@@ -20,6 +19,8 @@ import tkinter as tk
 from tkinter import filedialog
 import matplotlib
 from sympy.abc import alpha
+from VLIV.postprocess_vliv import *
+from LIV.liv_postprocess import *
 
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
@@ -44,18 +45,19 @@ if using IVS-800 data:
 """
 
 ### System parameters ###
-frames_per_second = 30
+frames_per_second = 55
 rasterRepeat = 16
 rasterRepeat_cal = rasterRepeat
 sys_ivs800 = True
-saveImg = True
-bivariate_mode = True
+yasuno_compute_aLiv_swiftness = True
+saveImg = False
+bivar_add_meanFreq = False  # False: variance-only; True: variance + mean frequency.
 
 ### Image processing parameters ###
 multiFolderProcess = True  # if multiple data folders
-var_range_ToHue = [0., 1]  # LIV (variance): 0~12 / LIV_norm: 0~0.13
+var_range_ToHue = [0., 15]  # LIV (variance): 0~12 / mLIV: 0~1 / LIV_norm: 0~0.13
 meanFreq_range_ToSat = [0.5, 2.5]
-if sys_ivs800:  octRangedB = [-2, 10]  # [-5, 20]
+if sys_ivs800:  octRangedB = [-15, 20]  # [-5, 20]
 else:  octRangedB = [0, 50]  # set dynamic range of log OCT signal display
 
 ### Starts here ###
@@ -98,7 +100,7 @@ for FileId in range(FileNum):
     batchList = np.linspace(0, dim_y, int(dim_y / rasterRepeat), endpoint=False)
     varRgbImg = np.zeros((dim_y_raster, dim_z, dim_x, 3), 'uint8')
     varRawImg = np.zeros((dim_y_raster, dim_z, dim_x), 'float32')
-    meanFreqImg = np.zeros((dim_y_raster, dim_z, dim_x), 'float32') if bivariate_mode else None
+    meanFreqImg = np.zeros((dim_y_raster, dim_z, dim_x), 'float32') if bivar_add_meanFreq else None
 
     if plt.fignum_exists(1):  pass
     else:
@@ -107,7 +109,18 @@ for FileId in range(FileNum):
     sys.stdout.write('\n')
     sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': ' + str(FileId + 1) + '/' + str(FileNum))
 
-    # dim_y_raster = 2
+    if yasuno_compute_aLiv_swiftness:
+        # #todo: compute aliv and swiftness here
+        frameRepeat = 1;  bscanLocationPerBlock = 1;  frameSeparationTime = 1 / frames_per_second  # frame time interval
+        blockRepeat = rasterRepeat  # 16  # Number of block repeats
+        blockPerVolume = dim_y_raster  # 256  # Number of blocks in a volume
+        vliv_postprocessing(DataFold, "Ibrahim2021BOE", frameSeparationTime, frameRepeat, bscanLocationPerBlock,
+                            blockRepeat, blockPerVolume, fitting_method="GPU", motionCorrection=False,
+                            octRange=tuple(octRangedB), alivRange=tuple(var_range_ToHue), swiftRange=(5, 30))
+        continue
+
+
+    # dim_y_raster = 1
     for batch_id in range(dim_y_raster):
         rawDat_batch = rawDat[(batch_id * rasterRepeat + errorShiftFrame):(
                     batch_id * rasterRepeat + errorShiftFrame + rasterRepeat_cal), :, :]  # [32(y), 300(z), 256(x)]
@@ -127,16 +140,17 @@ for FileId in range(FileNum):
         batchProj_varHue_clip = np.multiply(np.clip( (batchProj_var_norm - var_range_ToHue[0]) / (var_range_ToHue[1] - var_range_ToHue[0]), 0, 1), 0.6)  # limit color display range from red to blue
 
 
-        """ Compute mean frequency of each B-scan (from normalized power spectral density) > saturation """
+        """ Compute temporal metrics (mean frequency, aliv, swftness) from time sequence, assign to hsv channels """
         pix_loc = [355, 101]  # [Z_index, X_index]  # 动-green：[385, 52]  静-red：[259, 99]  空-gray: [400, 184]
-        if not bivariate_mode:
+        if not bivar_add_meanFreq:
             ch_saturation = np.ones_like(batchProj_varHue_clip)
             freq_mean_map = None
             var_at_pixel = batchProj_var_norm[pix_loc[0], pix_loc[1]]
             sys.stdout.write("Variance at pixel" + str(pix_loc) + ": " + str(var_at_pixel) + '\n')
         else:
+            # # # - - -  [2026/02/24: obsolete due to negligible contrast improvement] Compute mean frequency of each B-scan (from normalized power spectral density) > saturation - - - # # #
             fft_pad = 2;  seg_size = int(rasterRepeat_cal / 1);  overlap_size = int(seg_size / 2)
-            # #todo: compute normalized power spectral density and mean frequency for all pixels in the Z-X plane
+            # # compute normalized power spectral density and mean frequency for all pixels in the Z-X plane
             t_len, z_len, x_len = rawDat_batch.shape  # rawDat_batch: shape [time, Z, X]
             linearIntRecord_all = rawDat_batch.reshape(t_len, -1)  # reshape to [time, N_pixel]
             freq_bins, psd_all = welch(linearIntRecord_all, fs=frames_per_second, nperseg=seg_size, noverlap=overlap_size, window="hann",
@@ -145,7 +159,7 @@ for FileId in range(FileNum):
             psd_sum[psd_sum == 0] = 1.0  # set power over spectrum as 1 when computed as 0, to avoid dividing by 0 in norm
             psd_norm_all = psd_all / psd_sum  # L1 normalize PSD at each pixel. Ref: doi.org/10.1038/s41377-020-00375-8
             freq_mean_all = freq_bins @ psd_norm_all  # freq_bins: [n_freq], psd_norm_all: [n_freq, N_pixel]
-            # #todo: autocorrelation to find dominant frequency: https://stackoverflow.com/questions/78089462/how-to-extract-dominant-frequency-from-numpy-array
+            # # autocorrelation to find dominant frequency: https://stackoverflow.com/questions/78089462/how-to-extract-dominant-frequency-from-numpy-array
             freq_mean_map = freq_mean_all.reshape(z_len, x_len)  # reshape 回 (Z, X)，得到整幅图的 freq_mean 分布
             batchProj_meanFreqSat_clip = np.clip( (freq_mean_map - meanFreq_range_ToSat[0]) / (meanFreq_range_ToSat[1] - meanFreq_range_ToSat[0]), 0, 1)
             ch_saturation = batchProj_meanFreqSat_clip
@@ -198,7 +212,7 @@ for FileId in range(FileNum):
                                                  batchProj_valMax_clip]))  # [varProj_hue, varProj_sat/_val, varProj_val]  # [batchProj_varHue, np.ones_like(batchProj_varHue), batchProj_valMax_clip]
         varRgbImg[batch_id, :, :, :] = np.swapaxes(batchProj_rgb, 0, 1) * 255
         varRawImg[batch_id, :, :] = batchProj_var_norm
-        if bivariate_mode:  meanFreqImg[batch_id, :, :] = freq_mean_map
+        if bivar_add_meanFreq:  meanFreqImg[batch_id, :, :] = freq_mean_map
 
         # #todo: fresh progress bar display
         sys.stdout.write('\r')

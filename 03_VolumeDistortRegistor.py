@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import tifffile
 import os
+import glob
 from tkinter import *
 from tkinter import filedialog
 import matplotlib
@@ -126,7 +127,7 @@ def load_full_tiffstack(path):
 
 # # # Initialize Tkinter for file selection
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True)
-stack_file_path = filedialog.askopenfilename(filetypes=[("", "*view.tif")])
+stack_file_path = filedialog.askopenfilename(filetypes=[("", "*view.tif *dbOct.tif")])
 tk.destroy()
 # # # Load image
 print('Loading fileID: ' + stack_file_path)
@@ -169,10 +170,22 @@ del raw_data
 DataId = os.path.basename(stack_file_path)
 root = os.path.dirname(stack_file_path)
 
-try:     volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_meanFreq.tif'), offSetMap, picker)
-except FileNotFoundError:     print('Mean frequency mode is off, skip saving as image.')
-try:
-    volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_LIV_raw.tif'), offSetMap, picker)
-    volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_LIV.tif'), offSetMap, picker)
-except FileNotFoundError:     print('No LIV data found, skip saving as image.')
-volumeRegistor((root + '/' + DataId), offSetMap, picker)
+if 'view' in DataId:
+    try:     volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_meanFreq.tif'), offSetMap, picker)
+    except FileNotFoundError:     print('Mean frequency mode is off, skip saving as image.')
+
+    try:
+        volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_LIV_raw.tif'), offSetMap, picker)
+        volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_LIV.tif'), offSetMap, picker)
+    except FileNotFoundError:     print('No LIV data found, skip saving as image.')
+
+    volumeRegistor((root + '/' + DataId), offSetMap, picker)
+
+elif 'dbOct' in DataId:
+    try:
+        volumeRegistor((root + '/' + DataId[:-16] + '_IntIm_aliv.tif'), offSetMap, picker)
+        volumeRegistor(glob.glob(root + '/' + DataId[:-16] + '_IntIm_aliv_min*-max*.tif')[0], offSetMap, picker)
+        volumeRegistor((root + '/' + DataId[:-16] + '_IntIm_dbOct.tif'), offSetMap, picker)
+        volumeRegistor((root + '/' + DataId[:-16] + '_IntIm_swiftness.tif'), offSetMap, picker)
+        volumeRegistor(glob.glob(root + '/' + DataId[:-16] + '_IntIm_swiftness_min*-max*.tif')[0], offSetMap, picker)
+    except FileNotFoundError:     print('No aLiv or swiftness images found.')
