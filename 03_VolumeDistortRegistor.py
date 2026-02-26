@@ -127,7 +127,7 @@ def load_full_tiffstack(path):
 
 # # # Initialize Tkinter for file selection
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True)
-stack_file_path = filedialog.askopenfilename(filetypes=[("", "*view.tif *dbOct.tif")])
+stack_file_path = filedialog.askopenfilename(title="dbOct > YasunoAliv&Swift; 3d_view > mLiv", filetypes=[("", "*view.tif *dbOct.tif")])
 tk.destroy()
 # # # Load image
 print('Loading fileID: ' + stack_file_path)

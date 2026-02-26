@@ -49,13 +49,13 @@ frames_per_second = 55
 rasterRepeat = 16
 rasterRepeat_cal = rasterRepeat
 sys_ivs800 = True
-yasuno_compute_aLiv_swiftness = True
-saveImg = False
+yasuno_aLiv_swiftness = True
+saveImg = True
 bivar_add_meanFreq = False  # False: variance-only; True: variance + mean frequency.
 
 ### Image processing parameters ###
 multiFolderProcess = True  # if multiple data folders
-var_range_ToHue = [0., 15]  # LIV (variance): 0~12 / mLIV: 0~1 / LIV_norm: 0~0.13
+live_range_ToHue = [0., 15]  # LIV (variance): 0~12 / mLIV: 0~1 / LIV_norm: 0~0.13
 meanFreq_range_ToSat = [0.5, 2.5]
 if sys_ivs800:  octRangedB = [-15, 20]  # [-5, 20]
 else:  octRangedB = [0, 50]  # set dynamic range of log OCT signal display
@@ -109,14 +109,14 @@ for FileId in range(FileNum):
     sys.stdout.write('\n')
     sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': ' + str(FileId + 1) + '/' + str(FileNum))
 
-    if yasuno_compute_aLiv_swiftness:
+    if yasuno_aLiv_swiftness:
         # #todo: compute aliv and swiftness here
         frameRepeat = 1;  bscanLocationPerBlock = 1;  frameSeparationTime = 1 / frames_per_second  # frame time interval
         blockRepeat = rasterRepeat  # 16  # Number of block repeats
         blockPerVolume = dim_y_raster  # 256  # Number of blocks in a volume
         vliv_postprocessing(DataFold, "Ibrahim2021BOE", frameSeparationTime, frameRepeat, bscanLocationPerBlock,
                             blockRepeat, blockPerVolume, fitting_method="GPU", motionCorrection=False,
-                            octRange=tuple(octRangedB), alivRange=tuple(var_range_ToHue), swiftRange=(5, 30))
+                            octRange=tuple(octRangedB), alivRange=tuple(live_range_ToHue), swiftRange=(0, 30))
         continue
 
 
@@ -137,7 +137,7 @@ for FileId in range(FileNum):
         # batchProj_var_norm = batchProj_var  #todo: LIV (dB^2); typical display range: (0, 6)
         batchProj_var_norm = batchProj_var / batchProj_maxInt  #todo: Modified-LIV (dB); typical display range: (0, 1.)
         # batchProj_var_norm = batchProj_var / (batchProj_maxInt ** 2)  #todo: Normalized LIV (a.u.); typical display range: (0, 1.3)
-        batchProj_varHue_clip = np.multiply(np.clip( (batchProj_var_norm - var_range_ToHue[0]) / (var_range_ToHue[1] - var_range_ToHue[0]), 0, 1), 0.6)  # limit color display range from red to blue
+        batchProj_varHue_clip = np.multiply(np.clip((batchProj_var_norm - live_range_ToHue[0]) / (live_range_ToHue[1] - live_range_ToHue[0]), 0, 1), 0.6)  # limit color display range from red to blue
 
 
         """ Compute temporal metrics (mean frequency, aliv, swftness) from time sequence, assign to hsv channels """
