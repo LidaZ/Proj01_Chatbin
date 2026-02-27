@@ -45,7 +45,7 @@ if using IVS-800 data:
 """
 
 ### System parameters ###
-frames_per_second = 55
+frames_per_second = 30
 rasterRepeat = 16
 rasterRepeat_cal = rasterRepeat
 sys_ivs800 = True
@@ -55,13 +55,14 @@ bivar_add_meanFreq = False  # False: variance-only; True: variance + mean freque
 
 ### Image processing parameters ###
 multiFolderProcess = True  # if multiple data folders
-live_range_ToHue = [0., 15]  # LIV (variance): 0~12 / mLIV: 0~1 / LIV_norm: 0~0.13
-meanFreq_range_ToSat = [0.5, 2.5]
-if sys_ivs800:  octRangedB = [-15, 20]  # [-5, 20]
-else:  octRangedB = [0, 50]  # set dynamic range of log OCT signal display
+octRangedB = [-15, 20] if sys_ivs800 else [0, 50]
+mliv_range = [0, 1]  # LIV (variance): 0~12 / mLIV: 0~1 / LIV_norm: 0~0.13
+meanFreq_range = [0, 3]
+aliv_range = (0, 15);  swift_range = (0, 20)
+
 
 ### Starts here ###
-errorShiftFrame = 0  # 0 for normal, 8 for IVS-800 data
+# errorShiftFrame = 0  # 0 for normal, 8 for IVS-800 data
 if multiFolderProcess:
     root = tk.Tk();  root.withdraw();  Fold_list = [];  DataFold_list = [];  extension = ['_IntImg.tif']
     folderPath = filedialog.askdirectory(title="Cancel to Stop Enqueue")
@@ -115,15 +116,15 @@ for FileId in range(FileNum):
         blockRepeat = rasterRepeat  # 16  # Number of block repeats
         blockPerVolume = dim_y_raster  # 256  # Number of blocks in a volume
         vliv_postprocessing(DataFold, "Ibrahim2021BOE", frameSeparationTime, frameRepeat, bscanLocationPerBlock,
-                            blockRepeat, blockPerVolume, fitting_method="GPU", motionCorrection=False,
-                            octRange=tuple(octRangedB), alivRange=tuple(live_range_ToHue), swiftRange=(0, 30))
+                            blockRepeat, blockPerVolume, fitting_method="GPU", motionCorrection=False, save_LivCurve=True,
+                            octRange=tuple(octRangedB), alivRange=tuple(aliv_range), swiftRange=swift_range)
         continue
 
 
     # dim_y_raster = 1
     for batch_id in range(dim_y_raster):
-        rawDat_batch = rawDat[(batch_id * rasterRepeat + errorShiftFrame):(
-                    batch_id * rasterRepeat + errorShiftFrame + rasterRepeat_cal), :, :]  # [32(y), 300(z), 256(x)]
+        rawDat_batch = rawDat[(batch_id * rasterRepeat):(
+                    batch_id * rasterRepeat + rasterRepeat_cal), :, :]  # [32(y), 300(z), 256(x)]
         rawDat_batch_filt = rawDat_batch  # - rawDat_batch_dc        # linear intensity
         rawDat_batch_log = np.multiply( 10, np.log10(rawDat_batch_filt + 1) )  # dB, log intensity, 10*log10(linear), typical range: (0, 36)
 
@@ -137,16 +138,16 @@ for FileId in range(FileNum):
         # batchProj_var_norm = batchProj_var  #todo: LIV (dB^2); typical display range: (0, 6)
         batchProj_var_norm = batchProj_var / batchProj_maxInt  #todo: Modified-LIV (dB); typical display range: (0, 1.)
         # batchProj_var_norm = batchProj_var / (batchProj_maxInt ** 2)  #todo: Normalized LIV (a.u.); typical display range: (0, 1.3)
-        batchProj_varHue_clip = np.multiply(np.clip((batchProj_var_norm - live_range_ToHue[0]) / (live_range_ToHue[1] - live_range_ToHue[0]), 0, 1), 0.6)  # limit color display range from red to blue
+        batchProj_varHue_clip = np.multiply(np.clip((batchProj_var_norm - mliv_range[0]) / (mliv_range[1] - mliv_range[0]), 0, 1), 0.6)  # limit color display range from red to blue
 
 
         """ Compute temporal metrics (mean frequency, aliv, swftness) from time sequence, assign to hsv channels """
-        pix_loc = [355, 101]  # [Z_index, X_index]  # 动-green：[385, 52]  静-red：[259, 99]  空-gray: [400, 184]
+        # pix_loc = [355, 101]  # [Z_index, X_index]  # 动-green：[385, 52]  静-red：[259, 99]  空-gray: [400, 184]
         if not bivar_add_meanFreq:
             ch_saturation = np.ones_like(batchProj_varHue_clip)
             freq_mean_map = None
-            var_at_pixel = batchProj_var_norm[pix_loc[0], pix_loc[1]]
-            sys.stdout.write("Variance at pixel" + str(pix_loc) + ": " + str(var_at_pixel) + '\n')
+            # var_at_pixel = batchProj_var_norm[pix_loc[0], pix_loc[1]]
+            # sys.stdout.write("Variance at pixel" + str(pix_loc) + ": " + str(var_at_pixel) + '\n')
         else:
             # # # - - -  [2026/02/24: obsolete due to negligible contrast improvement] Compute mean frequency of each B-scan (from normalized power spectral density) > saturation - - - # # #
             fft_pad = 2;  seg_size = int(rasterRepeat_cal / 1);  overlap_size = int(seg_size / 2)
@@ -161,7 +162,7 @@ for FileId in range(FileNum):
             freq_mean_all = freq_bins @ psd_norm_all  # freq_bins: [n_freq], psd_norm_all: [n_freq, N_pixel]
             # # autocorrelation to find dominant frequency: https://stackoverflow.com/questions/78089462/how-to-extract-dominant-frequency-from-numpy-array
             freq_mean_map = freq_mean_all.reshape(z_len, x_len)  # reshape 回 (Z, X)，得到整幅图的 freq_mean 分布
-            batchProj_meanFreqSat_clip = np.clip( (freq_mean_map - meanFreq_range_ToSat[0]) / (meanFreq_range_ToSat[1] - meanFreq_range_ToSat[0]), 0, 1)
+            batchProj_meanFreqSat_clip = np.clip((freq_mean_map - meanFreq_range[0]) / (meanFreq_range[1] - meanFreq_range[0]), 0, 1)
             ch_saturation = batchProj_meanFreqSat_clip
 
             # """ Check int fluctuation profile / normalized power spectral density at a designated pixel """

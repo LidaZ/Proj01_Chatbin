@@ -183,9 +183,9 @@ if 'view' in DataId:
 
 elif 'dbOct' in DataId:
     try:
-        volumeRegistor((root + '/' + DataId[:-16] + '_IntIm_aliv.tif'), offSetMap, picker)
-        volumeRegistor(glob.glob(root + '/' + DataId[:-16] + '_IntIm_aliv_min*-max*.tif')[0], offSetMap, picker)
-        volumeRegistor((root + '/' + DataId[:-16] + '_IntIm_dbOct.tif'), offSetMap, picker)
-        volumeRegistor((root + '/' + DataId[:-16] + '_IntIm_swiftness.tif'), offSetMap, picker)
-        volumeRegistor(glob.glob(root + '/' + DataId[:-16] + '_IntIm_swiftness_min*-max*.tif')[0], offSetMap, picker)
+        volumeRegistor((root + '/' + DataId[:-17] + '_IntImg_aliv.tif'), offSetMap, picker)
+        volumeRegistor(glob.glob(root + '/' + DataId[:-17] + '_IntImg_aliv_min*-max*.tif')[0], offSetMap, picker)
+        volumeRegistor((root + '/' + DataId[:-17] + '_IntImg_dbOct.tif'), offSetMap, picker)
+        volumeRegistor((root + '/' + DataId[:-17] + '_IntImg_swiftness.tif'), offSetMap, picker)
+        volumeRegistor(glob.glob(root + '/' + DataId[:-17] + '_IntImg_swiftness_min*-max*.tif')[0], offSetMap, picker)
     except FileNotFoundError:     print('No aLiv or swiftness images found.')

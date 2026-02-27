@@ -13,7 +13,7 @@ if debugger == True:
 
 def vliv_postprocessing(path_OCT, volumeDataType, frameSeparationTime , 
                 frameRepeat, bscanLocationPerBlock, blockRepeat, blockPerVolume, fitting_method = "GPU", 
-                       alivInitial = 20, swiftInitial = 1 , bounds = ([0,0],[np.inf, np.inf]), 
+                       alivInitial = 20, swiftInitial = 1 , bounds = ([0,0],[np.inf, np.inf]), save_LivCurve = False,
                        use_constraint = True , compute_VoV = False, use_weight = False , average_LivCurve = True, motionCorrection = False,
                        octRange = (10., 40.), alivRange =(0., 10.), swiftRange =(0., 3.)):
      
@@ -149,7 +149,7 @@ def vliv_postprocessing(path_OCT, volumeDataType, frameSeparationTime ,
             VoV_save[floc,:,:,:] = VoV
             
     ## Generate each path save data
-    suffix_intensity_linear = ".tiff"
+    suffix_intensity_linear = ".tif"
     root = path_OCT[:-len(suffix_intensity_linear)]
     path_vliv = root  +  '_vliv.npy'
     path_timewindow = root  +  '_timewindows.npy'
@@ -158,7 +158,7 @@ def vliv_postprocessing(path_OCT, volumeDataType, frameSeparationTime ,
     tifffile.imwrite(root  +  '_dbOct.tif', oct_db )
     ## Save time windows, LIV curve (VLIV), and variance of all LIVs for each time window (VoV)
     np.save(path_timewindow, possibleMtw)
-    np.save(path_vliv, VLIV_save)
+    if save_LivCurve: np.save(path_vliv, VLIV_save)
     if compute_VoV == True:
         np.save(path_vov, VoV_save)
 
