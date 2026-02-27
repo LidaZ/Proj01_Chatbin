@@ -121,7 +121,7 @@ second_metric_horizontal = 'swiftness'  # 'swiftness' or 'mean frequency'
 manual_pick = False  # Enable manual pixel labeling on ax1['a']. Automatic display all masked pixels when set to False.
 aliv_range = (0, 35)
 mliv_range = (0, 1)  # liv_range = (0, 6)
-swiftness_range = (0, 30)
+swiftness_range = (0, 50)
 meanFreq_range = (0, 6)
 
 

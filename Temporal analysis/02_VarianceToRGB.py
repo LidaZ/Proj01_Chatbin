@@ -45,7 +45,7 @@ if using IVS-800 data:
 """
 
 ### System parameters ###
-frames_per_second = 30
+frames_per_second = 55  # 30
 rasterRepeat = 16
 rasterRepeat_cal = rasterRepeat
 sys_ivs800 = True
@@ -58,7 +58,7 @@ multiFolderProcess = True  # if multiple data folders
 octRangedB = [-15, 20] if sys_ivs800 else [0, 50]
 mliv_range = [0, 1]  # LIV (variance): 0~12 / mLIV: 0~1 / LIV_norm: 0~0.13
 meanFreq_range = [0, 3]
-aliv_range = (0, 15);  swift_range = (0, 20)
+aliv_range = (0, 15);  swift_range = (0, 30)  # (0, 20)
 
 
 ### Starts here ###
