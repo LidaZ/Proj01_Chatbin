@@ -1,6 +1,8 @@
 # import os
 # import sys
 # import time
+from unittest import case
+
 import numpy as np
 import tifffile
 import os
@@ -9,6 +11,7 @@ from tkinter import *
 from tkinter import filedialog
 import matplotlib
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+# from sympy.strategies.core import switch
 # from mpmath.libmp.libelefun import log_int_cache
 # from torch.utils.tensorboard.summary import histogram
 matplotlib.use("Qt5Agg")
@@ -20,7 +23,6 @@ from cellpose import denoise #, utils, io
 import mpl_scatter_density
 from matplotlib.colors import LinearSegmentedColormap
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-
 
 
 """
@@ -108,53 +110,73 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     return FrameCoord
 
 
-# x_meanFreq_tmp = []
-# y_Liv_tmp = []
-
 
 zSlice = [338, 339]  # manual z slicing range to select depth region for computing viability
-int_threshold_segment = 0.35  # Segmentation after cellpose-3 process, which is a normalized image.
+int_threshold_dB = -5.  # Segmentation after cellpose-3 process, which is a normalized image.
 viability_liv_threshold = 0.18
-Switch_Sscatter2D_or_mLivCountViability = True  # True: scatter plot; False: pixel counting for viability
-second_metric_horizontal = 'swiftness'  # 'swiftness' or 'mean frequency'
+switch_scatter2D_or_mLivCountViability = True  # True: scatter plot; False: pixel counting for viability
+second_metric_horizontal = 'swiftness'  # 'swiftness', 'mean frequency' or 'intensity'. Only available when switch_scatter2D == True.
+sys_ivs800 = True; octRangedB = (-15, 20) if sys_ivs800 else (0, 50)
 # viaIntThreshold = 13  # bullshit threshold on intensity to compute viability
 manual_pick = False  # Enable manual pixel labeling on ax1['a']. Automatic display all masked pixels when set to False.
 aliv_range = (0, 35)
 mliv_range = (0, 1)  # liv_range = (0, 6)
 swiftness_range = (0, 50)
 meanFreq_range = (0, 6)
+int_threshold_dB_toGray = (int_threshold_dB - octRangedB[0]) / (octRangedB[1] - octRangedB[0]) * 255
 
 
+""" Open file to select first metric. aliv.tif > aliv, _LIV.tif > mLiv. """
+file_name_filter = "*aliv_min* *_LIV.tif" if switch_scatter2D_or_mLivCountViability else "*_LIV.tif"
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True)
-stackFilePath = filedialog.askopenfilename(title="aliv > YasunoAliv&Swift; LIV > mLiv", filetypes=[("", "*aliv_min* *_LIV.tif")])
+stackFilePath = filedialog.askopenfilename(title="aliv > YasunoAliv&Swift; LIV > mLiv", filetypes=[("", file_name_filter)])
 DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath);  tk.destroy()
 first_metric_aLivOvermLiv = True if 'aliv' in DataId else False  # True: aLIV + swiftness; False: mean frequency
 print('Loading fileID: ' + stackFilePath)
 
-""" Read size of tiff stack. If VolFlip==True:  rawDat = tifffile.imread(stackFilePath) """
-memmap_rawDat = tifffile.memmap(stackFilePath, mode='r')
+""" Define axes property for 2D scatter plot. """
+string_DataId = DataId[:4]
+logIntFilePath = root + '/' + string_DataId + '_3d_view.tif'
+if first_metric_aLivOvermLiv:
+    first_metric_label = 'aLIV (dB$^2$)'
+    first_metricLIV_FilePath = glob.glob(root + '/' + string_DataId + '_IntImg_aliv.tif')[0]
+    first_metric_range = aliv_range
+else:
+    first_metric_label = 'mLIV (dB)'
+    first_metricLIV_FilePath = root + '/' + string_DataId + '_IntImg_LIV_raw.tif'
+    first_metric_range = mliv_range
+match second_metric_horizontal:
+    case 'swiftness':
+        second_metric_label = 'Swiftness (s$^{-1}$)'
+        second_metric_filePath = root + '/' + string_DataId + '_IntImg_swiftness.tif'
+        second_metric_range = swiftness_range
+    case 'mean frequency':
+        second_metric_label = 'Mean frequency (Hz)'
+        second_metric_filePath = root + '/' + string_DataId + '_IntImg_meanFreq.tif'
+        second_metric_range = meanFreq_range
+    case 'intensity':
+        second_metric_label = 'Mean intensity (dB)'
+        second_metric_filePath = root + '/' + string_DataId + '_3d_view.tif'
+        second_metric_range = octRangedB
+
+""" Read size of tiff stack. """
+memmap_rawDat = tifffile.memmap(stackFilePath, mode='r')  # rawDat = tifffile.imread(stackFilePath)
 rawDat = np.swapaxes(memmap_rawDat, 0, 1)  # load linear intensity data from stack. Dimension (Y, Z, X)
 dim_z, dim_y, dim_x = np.shape(rawDat)[0:3]            # [dim_y, dim_z, dim_x] original dimensions before applying `AutoRotateMacro.ijm`
-cropCube = np.zeros([dim_z, dim_y, dim_x], dtype=int)
+enface_mask_to_vol = np.zeros([dim_z, dim_y, dim_x], dtype=int)
 model = denoise.CellposeDenoiseModel(gpu=True, model_type="cyto3", restore_type="denoise_cyto3")
 try:  zSliceList = np.linspace(zSlice[0], zSlice[1], zSlice[1]-zSlice[0]+1).astype('int')
 except ValueError:  print('zSlice is not a valid range: ', zSlice)
 
-# if plt.fignum_exists(1): plt.close(1)
-    # fig1 = plt.figure(1)  # plt.clf()  # pass
-    # ax1 = {label: ax for ax, label in zip(fig1.axes, ['a', 'b', 'c', 'd'])}  # 获取已存在的 axes
 fig1 = plt.figure(1, clear=True, figsize=(9, 4.5), layout='constrained')
 ax1 = fig1.subplot_mosaic("aaabc;aaadd;aaadd", per_subplot_kw={"d": dict(projection='scatter_density')})
 ax1['a'].title.set_text('Drag rectangle to select ROI from dOCT')
 ax1['b'].title.set_text('After manual cropping'); ax1['b'].axis('off')
 ax1['c'].title.set_text('Segmentation mask'); ax1['c'].axis('off')
-if Switch_Sscatter2D_or_mLivCountViability is False:
+if switch_scatter2D_or_mLivCountViability is False:
     ax1['d'].set_ylabel('Viable fraction');  ax1['d'].set_xlabel('En-face slice at depth (um)')
     ax1['d'].set_ylim(-0.01, 1.02);  ax1['d'].yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
     ax1['d'].set_xlim(0, len(zSliceList)*2)
-else:
-    ax1['d'].set_ylabel('aLIV (dB$^2$)') if first_metric_aLivOvermLiv else ax1['d'].set_ylabel('mLIV (dB)')
-    ax1['d'].set_xlabel('Swiftness (s$^{-1}$)') if second_metric_horizontal == 'swiftness' else ax1['d'].set_xlabel('Mean frequency (Hz)')
 
 """ Draw rectangles at the first and last frames, and the overlapping cubic is the 3D ROI for viability (volume fraction) computation. """
 frameIndex = zSliceList[0]
@@ -164,24 +186,16 @@ lastFrameCord = drawRectFromFrame(ax1['a'], fig1, rawDat, frameIndex)
 
 """ Create 3D mask from the two rectangles' coordinates. """
 overlapRect = findOverlapRect(firstFrameCord, lastFrameCord)
-# overlapRect = findOverlapRect([(2, 1), (2, 237), (254, 1), (254, 237)], [(3, 3), (3, 197), (251, 3), (251, 197)])
-cropCube[:, overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = 1  # dim_z, dim_y, dim_x
+enface_mask_to_vol[:, overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = 1  # dim_z, dim_y, dim_x
 
 """ load linear intensity stack, apply `cropCube`, denoising using `Cellpose v3`, apply `intThreshold` to segment cell regions. 
 3D version is only for test visualize, a 2D version is preferred which is supposed to work with an en-face image stack. """
-string_DataId = DataId[:4] # if first_metric_aLivOvermLiv else DataId[:-15]
-logIntFilePath = root + '/' + string_DataId + '_3d_view.tif'
-if first_metric_aLivOvermLiv:  first_metricLIV_FilePath = glob.glob(root + '/' + string_DataId + '_IntImg_aliv.tif')[0]
-else:  first_metricLIV_FilePath = root + '/' + string_DataId + '_IntImg_LIV_raw.tif'
-if second_metric_horizontal == 'swiftness':  second_metric_filePath = root + '/' + string_DataId + '_IntImg_swiftness.tif'
-elif second_metric_horizontal == 'mean frequency':  second_metric_filePath = root + '/' + string_DataId + '_IntImg_meanFreq.tif'
-
 viabilityList = [];  viaList = [];  totalList = []
 tmpList = []
 pts_lime = [];  pts_magenta = []
 memmap_logInt = tifffile.memmap(logIntFilePath, mode='r')
 memmap_rawLiv = tifffile.memmap(first_metricLIV_FilePath, mode='r')
-if Switch_Sscatter2D_or_mLivCountViability:
+if switch_scatter2D_or_mLivCountViability:
     try:  memmap_second_metric = tifffile.memmap(second_metric_filePath, mode='c')
     except FileNotFoundError:  print('Scatter plot mode, did not find second-metric data: ', second_metric_filePath)
 
@@ -190,16 +204,17 @@ for frameIndex in zSliceList:
     # ax1['a'].clear();  ax1['a'].imshow(logIntFrame, cmap='gray')
     rawDat_enfaceSlice = rawDat[frameIndex, ...]; 
     ax1['a'].clear();  ax1['a'].imshow(rawDat_enfaceSlice)  # cropIntFrame = logIntFrame.copy() * cropCube[frameIndex, ...]
-    cropIntFrame = logIntFrame * cropCube[frameIndex, ...]  # margin zeros should not be passed to cellpose, otherwise indexing error will raise
-    cropIntFrame_seg = cropIntFrame[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]]
-    ax1['b'].clear();  ax1['b'].imshow(cropIntFrame, cmap='gray')
+    cropLogIntFrame = logIntFrame * enface_mask_to_vol[frameIndex, ...]  # margin zeros should not be passed to cellpose, otherwise indexing error will raise
+    cropLogIntFrame_seg = cropLogIntFrame[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]]
+    ax1['b'].clear();  ax1['b'].imshow(cropLogIntFrame, cmap='gray')
     try:
-        _, _, _, cropIntFrame_seg_dn = model.eval(cropIntFrame_seg, diameter=None, channels=[0, 0]) # , niter=200000)
-        _ = cropCube[frameIndex, ...].copy()
+        # #todo: temporarily remove cellpose filter, to completely exclude low-intensity pixels.
+        # _, _, _, cropLogIntFrame_seg_dn = model.eval(cropLogIntFrame_seg, diameter=None, channels=[0, 0]) # , niter=200000)
+        _ = enface_mask_to_vol[frameIndex, ...].copy()
         cropIntFrameDn = _.astype('float')
-        cropIntFrameDn[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = cropIntFrame_seg_dn[..., 0]
+        cropIntFrameDn[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = cropLogIntFrame_seg  # cropLogIntFrame_seg_dn[..., 0]
         # ax1['b'].clear();  ax1['b'].imshow(cropIntFrameDn, cmap='gray')
-        frameMask = cropIntFrameDn > int_threshold_segment
+        frameMask = cropIntFrameDn > int_threshold_dB_toGray  # /255)
         """ Display masked RGB image: keep pixels where mask is True, black elsewhere. """
         masked_rgb = rawDat_enfaceSlice.copy()
         if masked_rgb.ndim == 3 and masked_rgb.shape[2] >= 3:
@@ -239,65 +254,61 @@ for frameIndex in zSliceList:
 
         viabilityList.append(viability)
         viaList.append(cntLiving);  totalList.append(cntAllPix)
-        if Switch_Sscatter2D_or_mLivCountViability:
+        if switch_scatter2D_or_mLivCountViability:
             second_metric_frame = memmap_second_metric[:, frameIndex, :]
             # # #todo: 把拟合的swiftness中的所有infinity强制设为0. 需要看看为啥gpufit得到的1/tau是无限
             second_metric_frame[second_metric_frame == np.inf] = 0
-            second_metric_mask = second_metric_frame * frameMask
+            second_metric_mask = (second_metric_frame * frameMask).astype(np.float32)
             second_metric_mask[second_metric_mask == 0] = np.nan
             ax1['c'].clear(); ax1['c'].imshow(second_metric_mask, cmap='inferno')
         else:
-            ax1['d'].scatter((frameIndex - zSliceList[0]) * 2, viability, color='#6ea6db', marker='o', s=7)
-            manual_pick = False
+            ax1['d'].scatter((frameIndex - zSliceList[0]) * 2, viability, color='#6ea6db', marker='o', s=7);  manual_pick = False
 
         """ Scatter plot of all masked pixels (mpl_scatter_density to reduce drawing burden) using (modified) LIV and mean frequency. """
-        if (manual_pick is False) and (Switch_Sscatter2D_or_mLivCountViability is True):
+        if (manual_pick is False) and (switch_scatter2D_or_mLivCountViability is True):
             y_first_metric = rawLivFrame_mask.flatten()
             x_second_metric = second_metric_mask.flatten()
             valid_mask = ~np.isnan(y_first_metric) & ~np.isnan(x_second_metric)  # np.isinf(valid_mask).any() > False
             # # # (1) 所有mask点绘制 scatter，使用mpl_scatter_density
-            # white_viridis = LinearSegmentedColormap.from_list('white_viridis', [(0, '#ffffff'), (1e-20, '#440053'),
-            #     (0.2, '#404388'), (0.4, '#2a788e'),(0.6, '#21a784'), (0.8, '#78d151'),(1, '#fde624'),], N=256)
             self_cmap = LinearSegmentedColormap.from_list('self_cmap', [(0, '#ffffff'), (1e-20, '#160c57'),
                 (0.2, '#2469fd'), (0.4, '#24fdfd'), (0.6, '#94fd24'), (0.8, '#fdce24'), (1, '#fd2f24'), ], N=256)
             density = ax1['d'].scatter_density(x_second_metric[valid_mask], y_first_metric[valid_mask], cmap=self_cmap)
             try:  cb.remove()
             except NameError:  pass
             cb = fig1.colorbar(density, ax=ax1['d'], label='Scatter density')
-            if first_metric_aLivOvermLiv:  ax1['d'].set_ylabel('aLIV (dB$^2$)'); ax1['d'].set_ylim(aliv_range)
-            else:  ax1['d'].set_ylabel('mLIV (dB)'); ax1['d'].set_ylim(mliv_range)
-            if second_metric_horizontal == 'swiftness':  ax1['d'].set_xlim(swiftness_range)
-            elif second_metric_horizontal == 'mean frequency': ax1['d'].set_xlim(meanFreq_range)
-                # ax1['d'].set_ylabel('LIV (dB$^2$)'); ax1['d'].set_ylim(0, 7)
-                # ax1['d'].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1], [0, 1, 2, 3, 4, 5])  # rescale from mLIV (dB) to LIV (dB^2)
+            ax1['d'].set_ylabel(first_metric_label)
+            ax1['d'].set_ylim(first_metric_range)
+            ax1['d'].set_xlabel(second_metric_label)
+            if 'intensity' not in second_metric_horizontal: ax1['d'].set_xlim(second_metric_range)
+            else: ax1['d'].set_xticks([0, 255],[octRangedB[0], octRangedB[1]])
             # try: cb.update_normal(density)  # fail to update colorbar automatically unless manually stretch window
             # except NameError: cb = plt.colorbar(density, ax=ax1['d'], label='Scatter density')
 
             """ Use the last en-face for scatter plot with histogram - Figure 2 """
-            # if frameIndex == zSliceList[-1]:
-            #     if not plt.fignum_exists(2):
-            #         fig2 = plt.figure(2, figsize=(4, 4))
-            #         ax2 = fig2.subplot_mosaic("111", per_subplot_kw={"1": dict(projection='scatter_density')})
-            #         if switch_to_yasuno_aLiv_swiftness:
-            #             ax2['1'].set_xlabel('Swiftness (s$^-1$)');  ax2['1'].set_ylabel('aLIV (dB$^2$)')
-            #         else:
-            #             ax2['1'].set_xlabel('Mean frequency (Hz)');  ax2['1'].set_ylabel('LIV (dB$^2$)')
-            #         ax2['1'].set_ylim(mliv_range);  # ax2['1'].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1], [0, 1, 2, 3, 4, 5])
-            #         ax2['1'].set_xlim(meanFreq_range);  # ax2['1'].set_xscale('log')
-            #
-            #         divider = make_axes_locatable(ax2['1'])
-            #         ax_histx = divider.append_axes("top", size="25%", pad=0.01, sharex=ax2['1'])
-            #         ax_histx.xaxis.set_tick_params(labelbottom=False);  ax_histx.xaxis.set_visible(False);  ax_histx.axis('off')
-            #         ax_histy = divider.append_axes("right", size="25%", pad=0.01, sharey=ax2['1'])
-            #         ax_histy.yaxis.set_tick_params(labelleft=False);  ax_histy.yaxis.set_visible(False);  ax_histy.axis('off')
-            #     """ assign color. """
-            #     scatter_color = 'red'
-            #     x_meanFreq_masked = x_second_metric[valid_mask];     y_Liv_masked = y_Liv[valid_mask]
-            #     density_dead = ax2['1'].scatter_density(x_meanFreq_masked, y_Liv_masked, color=scatter_color)
-            #     histx, bins_to_histx = np.histogram(x_meanFreq_masked, bins=50, density=True)
-            #     ax_histx.hist(x_meanFreq_masked, bins=bins_to_histx, density=True, alpha=0.4, color=scatter_color)
-            #     histy, bins_to_histy = np.histogram(y_Liv_masked, bins=50, density=True)
-            #     ax_histy.hist(y_Liv_masked, bins=bins_to_histy, density=True, alpha=0.4, color=scatter_color, orientation='horizontal')
+            if frameIndex == zSliceList[-1]:
+                # if not plt.fignum_exists(2):
+                fig2 = plt.figure(2, clear=True, figsize=(4, 4))
+                ax2 = fig2.subplot_mosaic("111", per_subplot_kw={"1": dict(projection='scatter_density')})
+                divider = make_axes_locatable(ax2['1'])
+                ax_histx = divider.append_axes("top", size="25%", pad=0.01, sharex=ax2['1'])
+                ax_histx.xaxis.set_tick_params(labelbottom=False);  ax_histx.xaxis.set_visible(False);  ax_histx.axis('off')
+                ax_histy = divider.append_axes("right", size="25%", pad=0.01, sharey=ax2['1'])
+                ax_histy.yaxis.set_tick_params(labelleft=False);  ax_histy.yaxis.set_visible(False);  ax_histy.axis('off')
+                """ Make scatter plot of all masked pixels. """
+                scatter_color = 'blue'
+                x_masked = x_second_metric[valid_mask];     y_masked = y_first_metric[valid_mask]
+                density_dead = ax2['1'].scatter_density(x_masked, y_masked, color=scatter_color)  # cmap=self_cmap)
+                """ Adjust axes. """
+                ax2['1'].set_ylabel(first_metric_label)
+                ax2['1'].set_ylim(first_metric_range)
+                ax2['1'].set_xlabel(second_metric_label)
+                if 'intensity' not in second_metric_horizontal:  ax2['1'].set_xlim(second_metric_range)
+                else: ax2['1'].set_xticks([0, 250],[octRangedB[0], octRangedB[1]])
+                """ Make histogram aside from scatter plot. """
+                histx, bins_to_histx = np.histogram(x_masked, bins=30, range=second_metric_range, density=True)
+                ax_histx.hist(x_masked, bins=bins_to_histx, density=True, alpha=0.4, color=scatter_color)
+                histy, bins_to_histy = np.histogram(y_masked, bins=30, range=first_metric_range, density=True)
+                ax_histy.hist(y_masked, bins=bins_to_histy, density=True, alpha=0.4, color=scatter_color, orientation='horizontal')
 
 
         # #todo: Manual pick for scatter plot. 2026/02/26: Can be removed?
