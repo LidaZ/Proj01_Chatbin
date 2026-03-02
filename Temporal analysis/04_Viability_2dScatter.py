@@ -109,13 +109,17 @@ def drawRectFromFrame(ax1, fig1, rawDat, frameId):
     FrameCoord = rectangle_coords; print('selected frame: ', str(frameId), ' ROI is: ', FrameCoord)
     return FrameCoord
 
+def convert_arr_grayscale_to_dB(intArray_grayscale, octRangedB):
+    intArray_db = intArray_grayscale / 255 * (octRangedB[1] - octRangedB[0]) + octRangedB[0]
+    return intArray_db
+
 
 
 zSlice = [338, 339]  # manual z slicing range to select depth region for computing viability
 int_threshold_dB = -5.  # Segmentation after cellpose-3 process, which is a normalized image.
 viability_liv_threshold = 0.18
 switch_scatter2D_or_mLivCountViability = True  # True: scatter plot; False: pixel counting for viability
-second_metric_horizontal = 'swiftness'  # 'swiftness', 'mean frequency' or 'intensity'. Only available when switch_scatter2D == True.
+second_metric_horizontal = 'swiftness'  # 'swiftness', 'mean frequency' or 'mean intensity'. Only available when switch_scatter2D == True.
 sys_ivs800 = True; octRangedB = (-15, 20) if sys_ivs800 else (0, 50)
 # viaIntThreshold = 13  # bullshit threshold on intensity to compute viability
 manual_pick = False  # Enable manual pixel labeling on ax1['a']. Automatic display all masked pixels when set to False.
@@ -123,7 +127,6 @@ aliv_range = (0, 35)
 mliv_range = (0, 1)  # liv_range = (0, 6)
 swiftness_range = (0, 50)
 meanFreq_range = (0, 6)
-int_threshold_dB_toGray = (int_threshold_dB - octRangedB[0]) / (octRangedB[1] - octRangedB[0]) * 255
 
 
 """ Open file to select first metric. aliv.tif > aliv, _LIV.tif > mLiv. """
@@ -154,7 +157,7 @@ match second_metric_horizontal:
         second_metric_label = 'Mean frequency (Hz)'
         second_metric_filePath = root + '/' + string_DataId + '_IntImg_meanFreq.tif'
         second_metric_range = meanFreq_range
-    case 'intensity':
+    case 'mean intensity':
         second_metric_label = 'Mean intensity (dB)'
         second_metric_filePath = root + '/' + string_DataId + '_3d_view.tif'
         second_metric_range = octRangedB
@@ -214,7 +217,7 @@ for frameIndex in zSliceList:
         cropIntFrameDn = _.astype('float')
         cropIntFrameDn[overlapRect[0][1]:overlapRect[1][1], overlapRect[0][0]:overlapRect[2][0]] = cropLogIntFrame_seg  # cropLogIntFrame_seg_dn[..., 0]
         # ax1['b'].clear();  ax1['b'].imshow(cropIntFrameDn, cmap='gray')
-        frameMask = cropIntFrameDn > int_threshold_dB_toGray  # /255)
+        frameMask = convert_arr_grayscale_to_dB(cropIntFrameDn, octRangedB) > int_threshold_dB  # create binary mask using threshold on dBscale log int
         """ Display masked RGB image: keep pixels where mask is True, black elsewhere. """
         masked_rgb = rawDat_enfaceSlice.copy()
         if masked_rgb.ndim == 3 and masked_rgb.shape[2] >= 3:
@@ -255,11 +258,11 @@ for frameIndex in zSliceList:
         viabilityList.append(viability)
         viaList.append(cntLiving);  totalList.append(cntAllPix)
         if switch_scatter2D_or_mLivCountViability:
-            second_metric_frame = memmap_second_metric[:, frameIndex, :]
-            # # #todo: 把拟合的swiftness中的所有infinity强制设为0. 需要看看为啥gpufit得到的1/tau是无限
-            second_metric_frame[second_metric_frame == np.inf] = 0
-            second_metric_mask = (second_metric_frame * frameMask).astype(np.float32)
-            second_metric_mask[second_metric_mask == 0] = np.nan
+            second_metric_frame = memmap_second_metric[:, frameIndex, :].astype(np.float32)  # grayscale enface log int
+            # # #todo: （当second_metric='swiftness'时常见）把拟合的swiftness中的所有infinity强制设为0. 需要看看为啥gpufit得到的1/tau是无限
+            second_metric_frame[second_metric_frame == np.inf] = second_metric_range[1] #np.nan # inf > nan. 当second_metric='mean intensity'时不生效
+            second_metric_mask = second_metric_frame * frameMask  # frameMask = 0 or 1
+            second_metric_mask[second_metric_mask == 0] = np.nan  # masked-out or grayscale==0 pixels are nan
             ax1['c'].clear(); ax1['c'].imshow(second_metric_mask, cmap='inferno')
         else:
             ax1['d'].scatter((frameIndex - zSliceList[0]) * 2, viability, color='#6ea6db', marker='o', s=7);  manual_pick = False
@@ -269,6 +272,7 @@ for frameIndex in zSliceList:
             y_first_metric = rawLivFrame_mask.flatten()
             x_second_metric = second_metric_mask.flatten()
             valid_mask = ~np.isnan(y_first_metric) & ~np.isnan(x_second_metric)  # np.isinf(valid_mask).any() > False
+            if second_metric_horizontal == 'mean intensity': x_second_metric = convert_arr_grayscale_to_dB(x_second_metric, octRangedB)
             # # # (1) 所有mask点绘制 scatter，使用mpl_scatter_density
             self_cmap = LinearSegmentedColormap.from_list('self_cmap', [(0, '#ffffff'), (1e-20, '#160c57'),
                 (0.2, '#2469fd'), (0.4, '#24fdfd'), (0.6, '#94fd24'), (0.8, '#fdce24'), (1, '#fd2f24'), ], N=256)
@@ -279,10 +283,7 @@ for frameIndex in zSliceList:
             ax1['d'].set_ylabel(first_metric_label)
             ax1['d'].set_ylim(first_metric_range)
             ax1['d'].set_xlabel(second_metric_label)
-            if 'intensity' not in second_metric_horizontal: ax1['d'].set_xlim(second_metric_range)
-            else: ax1['d'].set_xticks([0, 255],[octRangedB[0], octRangedB[1]])
-            # try: cb.update_normal(density)  # fail to update colorbar automatically unless manually stretch window
-            # except NameError: cb = plt.colorbar(density, ax=ax1['d'], label='Scatter density')
+            ax1['d'].set_xlim(second_metric_range)
 
             """ Use the last en-face for scatter plot with histogram - Figure 2 """
             if frameIndex == zSliceList[-1]:
@@ -296,14 +297,13 @@ for frameIndex in zSliceList:
                 ax_histy.yaxis.set_tick_params(labelleft=False);  ax_histy.yaxis.set_visible(False);  ax_histy.axis('off')
                 """ Make scatter plot of all masked pixels. """
                 scatter_color = 'blue'
-                x_masked = x_second_metric[valid_mask];     y_masked = y_first_metric[valid_mask]
+                y_masked = y_first_metric[valid_mask];   x_masked = x_second_metric[valid_mask]  # already converted to dB
                 density_dead = ax2['1'].scatter_density(x_masked, y_masked, color=scatter_color)  # cmap=self_cmap)
                 """ Adjust axes. """
                 ax2['1'].set_ylabel(first_metric_label)
                 ax2['1'].set_ylim(first_metric_range)
                 ax2['1'].set_xlabel(second_metric_label)
-                if 'intensity' not in second_metric_horizontal:  ax2['1'].set_xlim(second_metric_range)
-                else: ax2['1'].set_xticks([0, 250],[octRangedB[0], octRangedB[1]])
+                ax2['1'].set_xlim(second_metric_range)
                 """ Make histogram aside from scatter plot. """
                 histx, bins_to_histx = np.histogram(x_masked, bins=30, range=second_metric_range, density=True)
                 ax_histx.hist(x_masked, bins=bins_to_histx, density=True, alpha=0.4, color=scatter_color)
