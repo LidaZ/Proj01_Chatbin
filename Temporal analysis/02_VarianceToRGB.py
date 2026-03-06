@@ -118,7 +118,7 @@ for FileId in range(FileNum):
         vliv_postprocessing(DataFold, "Ibrahim2021BOE", frameSeparationTime, frameRepeat, bscanLocationPerBlock,
                             blockRepeat, blockPerVolume, fitting_method="GPU", motionCorrection=False, save_LivCurve=True,
                             octRange=tuple(octRangedB), alivRange=tuple(aliv_range), swiftRange=swift_range)
-        continue
+        pass # continue
 
 
     # dim_y_raster = 1
@@ -129,15 +129,15 @@ for FileId in range(FileNum):
         rawDat_batch_log = np.multiply( 10, np.log10(rawDat_batch_filt + 1) )  # dB, log intensity, 10*log10(linear), typical range: (0, 36)
 
         # # # - - - compute max int projection along time window (computeRasterRepeat) at each pix > Value - - - # # #
-        batchProj_maxInt = np.max(rawDat_batch_log, axis=0)  # max of log intensity, typical range: (0.1, 36)
-        batchProj_valMax_clip = np.clip((batchProj_maxInt - octRangedB[0]) / (octRangedB[1] - octRangedB[0]), 0,1)  # clipped Log int
+        batchProj_maxLogInt = np.max(rawDat_batch_log, axis=0)  # max of log intensity, typical range: (0.1, 36)
+        batchProj_valMax_clip = np.clip((batchProj_maxLogInt - octRangedB[0]) / (octRangedB[1] - octRangedB[0]), 0, 1)  # clipped Log int
         # plt.figure(13); plt.clf(); plt.imshow(batchProj_valMax, cmap='gray')
 
         # # # - - - *compute variance/std/freq at each pix > Hue - - - # # #
         batchProj_var = np.var(rawDat_batch_log, axis=0)  # LIV: linear > log > variance. typical display range: (0, 146) > (0, 10)
         # batchProj_var_norm = batchProj_var  #todo: LIV (dB^2); typical display range: (0, 6)
-        batchProj_var_norm = batchProj_var / batchProj_maxInt  #todo: Modified-LIV (dB); typical display range: (0, 1.)
-        # batchProj_var_norm = batchProj_var / (batchProj_maxInt ** 2)  #todo: Normalized LIV (a.u.); typical display range: (0, 1.3)
+        batchProj_var_norm = batchProj_var / batchProj_maxLogInt  #todo: Modified-LIV (dB); typical display range: (0, 1.)
+        # batchProj_var_norm = batchProj_var / (batchProj_maxLogInt ** 2)  #todo: Normalized LIV (a.u.); typical display range: (0, 1.3)
         batchProj_varHue_clip = np.multiply(np.clip((batchProj_var_norm - mliv_range[0]) / (mliv_range[1] - mliv_range[0]), 0, 1), 0.6)  # limit color display range from red to blue
 
 
@@ -224,8 +224,8 @@ for FileId in range(FileNum):
         # plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
         plt.pause(0.02)
 
-    del DataFold, rawDat
-    gc.collect()
+    # del DataFold, rawDat
+    # gc.collect()
 
     """ Save image and raw data as tiff stacks """
     if saveImg:

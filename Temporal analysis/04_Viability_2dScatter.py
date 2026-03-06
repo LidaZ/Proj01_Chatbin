@@ -115,31 +115,32 @@ def convert_arr_grayscale_to_dB(intArray_grayscale, octRangedB):
 
 
 
-zSlice = [338, 339]  # manual z slicing range to select depth region for computing viability
+zSlice = [270, 271]  # manual z slicing range to select depth region for computing viability
 int_threshold_dB = -5.  # Segmentation after cellpose-3 process, which is a normalized image.
 viability_liv_threshold = 0.18
-switch_scatter2D_or_mLivCountViability = True  # True: scatter plot; False: pixel counting for viability
+switch_scatter2D_or_mLivCountViability = True # True: scatter plot; False: pixel counting for viability
 second_metric_horizontal = 'swiftness'  # 'swiftness', 'mean frequency' or 'mean intensity'. Only available when switch_scatter2D == True.
 sys_ivs800 = True; octRangedB = (-15, 20) if sys_ivs800 else (0, 50)
 # viaIntThreshold = 13  # bullshit threshold on intensity to compute viability
 manual_pick = False  # Enable manual pixel labeling on ax1['a']. Automatic display all masked pixels when set to False.
 aliv_range = (0, 35)
 mliv_range = (0, 1)  # liv_range = (0, 6)
-swiftness_range = (0, 50)
+swiftness_range = (0, 51)
 meanFreq_range = (0, 6)
 
 
 """ Open file to select first metric. aliv.tif > aliv, _LIV.tif > mLiv. """
 file_name_filter = "*aliv_min* *_LIV.tif" if switch_scatter2D_or_mLivCountViability else "*_LIV.tif"
 tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True)
-stackFilePath = filedialog.askopenfilename(title="aliv > YasunoAliv&Swift; LIV > mLiv", filetypes=[("", file_name_filter)])
+stackFilePath = filedialog.askopenfilename(title="Choose first metric: aliv > YasunoAliv&Swift; LIV > mLiv", filetypes=[("", file_name_filter)])
 DataId = os.path.basename(stackFilePath);   root = os.path.dirname(stackFilePath);  tk.destroy()
 first_metric_aLivOvermLiv = True if 'aliv' in DataId else False  # True: aLIV + swiftness; False: mean frequency
 print('Loading fileID: ' + stackFilePath)
 
 """ Define axes property for 2D scatter plot. """
 string_DataId = DataId[:4]
-logIntFilePath = root + '/' + string_DataId + '_3d_view.tif'
+log_int_filename = '_3d_view.tif'  # '_IntImg_dbOct.tif'  # '_3d_view.tif'
+logIntFilePath = root + '/' + string_DataId + log_int_filename
 if first_metric_aLivOvermLiv:
     first_metric_label = 'aLIV (dB$^2$)'
     first_metricLIV_FilePath = glob.glob(root + '/' + string_DataId + '_IntImg_aliv.tif')[0]
@@ -159,8 +160,10 @@ match second_metric_horizontal:
         second_metric_range = meanFreq_range
     case 'mean intensity':
         second_metric_label = 'Mean intensity (dB)'
-        second_metric_filePath = root + '/' + string_DataId + '_3d_view.tif'
+        second_metric_filePath = root + '/' + string_DataId + log_int_filename
         second_metric_range = octRangedB
+    case _:
+        print('Error: second metric is not available: ', second_metric_horizontal)
 
 """ Read size of tiff stack. """
 memmap_rawDat = tifffile.memmap(stackFilePath, mode='r')  # rawDat = tifffile.imread(stackFilePath)
@@ -259,8 +262,8 @@ for frameIndex in zSliceList:
         viaList.append(cntLiving);  totalList.append(cntAllPix)
         if switch_scatter2D_or_mLivCountViability:
             second_metric_frame = memmap_second_metric[:, frameIndex, :].astype(np.float32)  # grayscale enface log int
-            # # #todo: （当second_metric='swiftness'时常见）把拟合的swiftness中的所有infinity强制设为0. 需要看看为啥gpufit得到的1/tau是无限
-            second_metric_frame[second_metric_frame == np.inf] = second_metric_range[1] #np.nan # inf > nan. 当second_metric='mean intensity'时不生效
+            # # #todo: （当second_metric='swiftness'时常见）把拟合的swiftness中的所有infinity强制设为50. 需要看看为啥gpufit得到的1/tau是无限
+            second_metric_frame[second_metric_frame == np.inf] = second_metric_range[1]-1  # second_metric_range[1]-1 # np.nan # inf > nan. 当second_metric='mean intensity'时不生效
             second_metric_mask = second_metric_frame * frameMask  # frameMask = 0 or 1
             second_metric_mask[second_metric_mask == 0] = np.nan  # masked-out or grayscale==0 pixels are nan
             ax1['c'].clear(); ax1['c'].imshow(second_metric_mask, cmap='inferno')
@@ -288,7 +291,7 @@ for frameIndex in zSliceList:
             """ Use the last en-face for scatter plot with histogram - Figure 2 """
             if frameIndex == zSliceList[-1]:
                 # if not plt.fignum_exists(2):
-                fig2 = plt.figure(2, clear=True, figsize=(4, 4))
+                fig2 = plt.figure(2, clear=True, figsize=(5.5, 4))
                 ax2 = fig2.subplot_mosaic("111", per_subplot_kw={"1": dict(projection='scatter_density')})
                 divider = make_axes_locatable(ax2['1'])
                 ax_histx = divider.append_axes("top", size="25%", pad=0.01, sharex=ax2['1'])
@@ -298,7 +301,10 @@ for frameIndex in zSliceList:
                 """ Make scatter plot of all masked pixels. """
                 scatter_color = 'blue'
                 y_masked = y_first_metric[valid_mask];   x_masked = x_second_metric[valid_mask]  # already converted to dB
-                density_dead = ax2['1'].scatter_density(x_masked, y_masked, color=scatter_color)  # cmap=self_cmap)
+                density_dead = ax2['1'].scatter_density(x_masked, y_masked, cmap=self_cmap) # color=scatter_color)  # cmap=self_cmap)
+                try:  cb2.remove()
+                except NameError:  pass
+                cb2 = fig2.colorbar(density, ax=ax2['1'], label='Scatter density')
                 """ Adjust axes. """
                 ax2['1'].set_ylabel(first_metric_label)
                 ax2['1'].set_ylim(first_metric_range)

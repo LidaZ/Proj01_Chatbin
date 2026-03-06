@@ -170,22 +170,22 @@ del raw_data
 DataId = os.path.basename(stack_file_path)
 root = os.path.dirname(stack_file_path)
 
-if 'view' in DataId:
-    try:     volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_meanFreq.tif'), offSetMap, picker)
-    except FileNotFoundError:     print('Mean frequency mode is off, skip saving as image.')
+# if 'view' in DataId:
+try:     volumeRegistor((root + '/' + DataId[:4] + '_IntImg_meanFreq.tif'), offSetMap, picker)
+except FileNotFoundError:     print('Mean frequency mode is off, skip saving as image.')
 
-    try:
-        volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_LIV_raw.tif'), offSetMap, picker)
-        volumeRegistor((root + '/' + DataId[:-12] + '_IntImg_LIV.tif'), offSetMap, picker)
-    except FileNotFoundError:     print('No LIV data found, skip saving as image.')
+try:
+    volumeRegistor((root + '/' + DataId[:4] + '_IntImg_LIV_raw.tif'), offSetMap, picker)
+    volumeRegistor((root + '/' + DataId[:4] + '_IntImg_LIV.tif'), offSetMap, picker)
+except FileNotFoundError:     print('No LIV data found, skip saving as image.')
 
-    volumeRegistor((root + '/' + DataId), offSetMap, picker)
+volumeRegistor((root + '/' + DataId), offSetMap, picker)
 
-elif 'dbOct' in DataId:
-    try:
-        volumeRegistor((root + '/' + DataId[:-17] + '_IntImg_aliv.tif'), offSetMap, picker)
-        volumeRegistor(glob.glob(root + '/' + DataId[:-17] + '_IntImg_aliv_min*-max*.tif')[0], offSetMap, picker)
-        volumeRegistor((root + '/' + DataId[:-17] + '_IntImg_dbOct.tif'), offSetMap, picker)
-        volumeRegistor((root + '/' + DataId[:-17] + '_IntImg_swiftness.tif'), offSetMap, picker)
-        volumeRegistor(glob.glob(root + '/' + DataId[:-17] + '_IntImg_swiftness_min*-max*.tif')[0], offSetMap, picker)
-    except FileNotFoundError:     print('No aLiv or swiftness images found.')
+# elif 'dbOct' in DataId:
+try:
+    volumeRegistor((root + '/' + DataId[:4] + '_IntImg_aliv.tif'), offSetMap, picker)
+    volumeRegistor(glob.glob(root + '/' + DataId[:4] + '_IntImg_aliv_min*-max*.tif')[0], offSetMap, picker)
+    volumeRegistor((root + '/' + DataId[:4] + '_IntImg_dbOct.tif'), offSetMap, picker)
+    volumeRegistor((root + '/' + DataId[:4] + '_IntImg_swiftness.tif'), offSetMap, picker)
+    volumeRegistor(glob.glob(root + '/' + DataId[:4] + '_IntImg_swiftness_min*-max*.tif')[0], offSetMap, picker)
+except FileNotFoundError:     print('No aLiv or swiftness images found.')
