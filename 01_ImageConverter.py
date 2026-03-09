@@ -7,17 +7,13 @@ from configparser import ConfigParser
 import cv2
 import time
 import sys
-# from scipy.ndimage import zoom
 # from tqdm import tqdm
 import os
 import gc
 import array
 import mmap
-# from tkinter import *
 from tkinter import filedialog
-# from tkinter import messagebox
 import tkinter as tk
-from tkinter import simpledialog
 
 
 """
@@ -91,8 +87,8 @@ def custom_messagebox():
 sys_ivs800 = True
 Raster_Repeat_num = 16  # use any number of frames (<=32) to compute temporal fluctuation
 
-save_view = True  # Set as True if save dB-OCT img as 3D stack file for view
-save_tif = True  # Set as True if save intensity img as 3D stack .tiff file in the current folder
+save_Int_log = True  # Set as True if save dB-OCT img as 3D stack file for view
+save_Int_linear = True  # Set as True if save intensity img as 3D stack .tiff file in the current folder
 save_video = False  # (Only for dtype='timelapse') set as True if save Int_view img as .mp4
 display_proc = False  # Set as True if monitor img during converting
 gpu_proc = True
@@ -117,7 +113,7 @@ if gpu_proc:
     import cupy as np;  # from cupyx.scipy.ndimage import zoom # import nvTIFF (failed)
 octRangedB = [-10, 50]  # set dynamic range of log OCT signal display
 if sys_ivs800:  octRangedB = [-15, 20]
-[dim_y, dim_z, dim_x, FrameRate] = [0, 0, 0, 30];  # aspect_ratio = 1
+[dim_y, dim_z, dim_x, FrameRate] = [0, 0, 0, 55];  # aspect_ratio = 1
 # # # - - - - fetch dir path of data file - - - - # # #
 if multiFolderProcess:
     root = tk.Tk(); root.withdraw(); Fold_list = []; DataFold_list = []; extension = ['.dat', '.bin']
@@ -194,7 +190,7 @@ for FileId in range(FileNum):
     if display_proc:
         plt.figure(1, figsize=(dim_x/dim_z*7, 7))  # (dim_x/dim_z*aspect_ratio*7, 7)
         plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-    if save_view or save_tif:
+    if save_Int_log or save_Int_linear:
         if rasterRepeat > 1:  octImgVol_raster = np.zeros([int(dim_y/rasterRepeat), dim_z, dim_x]).astype(dtype='f4')
         # # # - - get data size of each batch - - # # #
         dim_y_batch = int(dim_y / proc_batch)
@@ -234,7 +230,7 @@ for FileId in range(FileNum):
                 octImg = vol[index, :, :].T
             res_octImg = octImg  # zoom(octImg, [1, aspect_ratio], order=1)
             # # # *extract the 1st image of each repeat raster and save into raster_LogIntView tiffFile # # #
-            if save_view or save_tif:
+            if save_Int_log or save_Int_linear:
                 if rasterRepeat > 1 and (batch_id*dim_y_batch+index)%rasterRepeat == 0:
                     rasterProjInd = int((batch_id*dim_y_batch+index)/rasterRepeat)
                     # octImgVol_raster[rasterProjInd, :, :] = res_octImg  # use first frame of each raster peroid as the log intensity image
@@ -278,7 +274,7 @@ for FileId in range(FileNum):
         sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' saving stack images' + ': '+str(FileId+1)+'/'+str(FileNum))
         time.sleep(0.01)
         octImgVol_rol = np.rollaxis(octImgVol[:, :, :], 0, 1)
-        if save_tif:
+        if save_Int_linear:
             octImgVol_linear = np.power(10, octImgVol_rol / 10)  # convert to linear intensity (square of signal amplitude)
             if gpu_proc: octImgVol_sav = octImgVol_linear.get()
             else: octImgVol_sav = octImgVol_linear
@@ -286,7 +282,7 @@ for FileId in range(FileNum):
                              append=True, metadata=None) #, bigtiff=True)  # , compression='zlib', compressionargs={'level': 8})
 
         # # # - - - save LogIntImg as Tiff stack - - - # # #
-        if save_view and rasterRepeat == 1:
+        if save_Int_log and rasterRepeat == 1:
             octImgView = (np.clip((octImgVol_rol - octRangedB[0]) / (octRangedB[1] - octRangedB[0]), 0, 1) * 255).astype(dtype='uint8')
             if gpu_proc: octImgView_sav = octImgView.get()
             else: octImgView_sav = octImgView
@@ -294,7 +290,7 @@ for FileId in range(FileNum):
 
 
     # # # - - - - - - for raster scan, compile the first image of each repeat as the 3d_view LogIntImg - - - # # #
-    if save_view and rasterRepeat > 1:
+    if save_Int_log and rasterRepeat > 1:
         octImgVol_raster_roll = np.rollaxis(octImgVol_raster[:, :, :], 0, 1)
         octImgView_raster = (np.clip((octImgVol_raster_roll - octRangedB[0]) / (octRangedB[1] - octRangedB[0]),0, 1) * 255).astype(dtype='uint8')
         if gpu_proc: octImgView_sav = octImgView_raster.get()
