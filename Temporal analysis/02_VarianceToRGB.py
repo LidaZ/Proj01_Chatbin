@@ -102,13 +102,13 @@ for FileId in range(FileNum):
     # dim_y_raster = 50
     for batch_id in range(dim_y_raster):
         rawDat_batch = rawDat[(batch_id * rasterRepeat):(batch_id * rasterRepeat + rasterRepeat_cal), :, :]  # linear intensity, dimension: [32(y), 300(z), 256(x)]
-        rawDat_batch_log = np.multiply( 10, np.log10(rawDat_batch + 0) )  # dB log intensity, 10*log10(linear), typical range: (-80, 36)
-        batchProj_maxLogInt = np.max(rawDat_batch_log, axis=0)
-        batchProj_valMax_clip = np.clip((batchProj_maxLogInt - octRangedB[0]) / (octRangedB[1] - octRangedB[0]), 0, 1)  # clipped Log int
+        rawDat_batch_log = np.multiply( 10, np.log10(rawDat_batch ) )  # RepeatBscan = 16. Size: [16 (Y), 1024 (Z), 256 (X)]  | DB log intensity Bscan sequence
+        batchProj_maxLogInt = np.max(rawDat_batch_log, axis=0)  # average of 16-Bscans. Size: [1024 (Z), 256 (X)]
+        batchProj_valMax_clip = np.clip((batchProj_maxLogInt - octRangedB[0]) / (octRangedB[1] - octRangedB[0]), 0, 1)  # Average log intensity > Value
         # plt.figure(13); plt.clf(); plt.imshow(batchProj_valMax, cmap='gray')
         # # # - - - *compute variance/std/freq at each pix > Hue - - - # # #
-        batchProj_var = np.var(rawDat_batch_log, axis=0)  #todo: LIV (dB^2); typical display range: (0, 50)
-        batchProj_varHue_clip = np.multiply(np.clip((batchProj_var - liv_range[0]) / (liv_range[1] - liv_range[0]), 0, 1), 0.6)  # limit color display range from red to blue
+        batchProj_var = np.var(rawDat_batch_log, axis=0)  # Variance of 16-Bscans. Size: [1024 (Z), 256 (X)]
+        batchProj_varHue_clip = np.multiply(np.clip((batchProj_var - liv_range[0]) / (liv_range[1] - liv_range[0]), 0, 1), 0.6)  # Clipped variance > Hue
 
         # # # - - - 自创的positive-scaled LIV，同时转换到hsv > rgb - - - - # # #
         block_logIntensity_positiveScaled = np.multiply(10, np.log10(rawDat_batch + 1))  # non-zero scale factor by log intensity, typical range: (0, 36)
@@ -188,7 +188,7 @@ for FileId in range(FileNum):
             # lgd = ax2['b'].legend()
 
         """convert to hue color space"""
-        batchProj_rgb = hsv_to_rgb(np.transpose([batchProj_varHue_clip, ch_saturation, batchProj_valMax_clip]))  # [varProj_hue, varProj_sat/_val, varProj_val]  # [batchProj_varHue, np.ones_like(batchProj_varHue), batchProj_valMax_clip]
+        batchProj_rgb = hsv_to_rgb(np.transpose([batchProj_varHue_clip, ch_saturation, batchProj_valMax_clip]))  # Hue: clipped variance; Saturation: 1;  Value: average log intensity
         liv_RgbImg[batch_id, :, :, :] = np.swapaxes(batchProj_rgb, 0, 1) * 255
         liv_raw[batch_id, :, :] = batchProj_var
         if Is_compute_meanFreq:  meanFreqImg[batch_id, :, :] = freq_mean_map

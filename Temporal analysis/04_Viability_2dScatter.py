@@ -149,16 +149,16 @@ def load_and_display_enface_image(mLivFilePath, ax1):
 
 
 
-zSlice = [337, 338]  # manual z slicing range to select depth region for computing viability
+zSlice = [231, 233]  # manual z slicing range to select depth region for computing viability
 SYSTEM_ID = 'ivs800'  # 'ivs800' or 'ivs2000'
 plot_mode = 'scatter'  # 'counting' or 'scatter'
 first_metric_horizontal = 'aliv'  # 'aLIV', 'liv', or 'mliv'
-second_metric_horizontal = 'swiftness'  # 'swiftness', 'mean frequency' or 'mean intensity'. Only available when switch_scatter2D == True.
+second_metric_horizontal = 'mean intensity'  # 'swiftness', 'mean frequency' or 'mean intensity'. Only available when switch_scatter2D == True.
 
 int_threshold_dB = -5.  # Threshold for log intensity to segment cell regions. If cellpose-3 enabled, it's applied to a normalized image, with typical value of ~0.17.
 viability_liv_threshold = 0.18  # 'mLIV': 0.18; 'LIV': ?; 'aLIV': ?
 octRangedB = (-15, 20) if SYSTEM_ID == 'ivs800' else (0, 50) if SYSTEM_ID == 'ivs2000' else print('Error: system ID is not supported: ', SYSTEM_ID)
-aliv_range = (0, 35);  swiftness_range = (0, 50);  exclude_inf_swiftness = True
+aliv_range = (0, 35);  swiftness_range = (0, 50);  exclude_inf_swiftness = False
 liv_range = (0, 45)
 mliv_range = (0, 1)
 meanFreq_range = (0, 6)
