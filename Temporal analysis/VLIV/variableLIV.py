@@ -317,7 +317,7 @@ def vlivGpuFitExp(VLIV, possibleMtw, VoV, frameSeparationTime, mfInitial, dfInit
         constraints[:,1] = bounds[1][0]
         constraints[:,2] = bounds[0][1]
         constraints[:,3] = bounds[1][1]
-        constraint_types = np.ones((n_parameter), dtype=int)
+        constraint_types = np.ones((n_parameter), dtype=np.int32)
         constraint_types[:] = 3
     
     ## calculate weight for fitting based on VoV (variance of all LIVs averaged)
