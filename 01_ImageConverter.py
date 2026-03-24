@@ -15,6 +15,12 @@ import mmap
 from tkinter import filedialog
 import tkinter as tk
 
+# Add "Temporal analysis" to sys.path to allow importing from its subfolders
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), "Temporal analysis"))
+from General.folder_selection import select_multiple_folders
+
 
 """
 Open source project for cell counting system. 
@@ -116,20 +122,14 @@ if sys_ivs800:  octRangedB = [-15, 20]
 [dim_y, dim_z, dim_x, FrameRate] = [0, 0, 0, 55];  # aspect_ratio = 1
 # # # - - - - fetch dir path of data file - - - - # # #
 if multiFolderProcess:
-    root = tk.Tk(); root.withdraw(); Fold_list = []; DataFold_list = []; extension = ['.dat', '.bin']
-    folderPath = filedialog.askdirectory(title="Cancel to Stop Enqueue")
-    Fold_list.append(folderPath)
-    while len(folderPath) > 0:
-        folderPath = filedialog.askdirectory(initialdir=os.path.dirname(folderPath))
-        if not folderPath:  break
-        Fold_list.append(folderPath)
+    DataFold_list = []; extension = ['.dat', '.bin']
+    Fold_list = select_multiple_folders()
     for item in Fold_list:  # list all files contained in each folder
         fileNameList = os.listdir(item)
         for n in fileNameList:
             if any(x in n for x in extension):
                 DataFold_list.append( os.path.join(item, n) )
     FileNum = len(DataFold_list)
-    root.destroy()
 else:
     root = tk.Tk(); root.withdraw(); DataFold_list = filedialog.askopenfilename(filetypes=[("", "*.bin")], multiple = True)
     root.destroy()

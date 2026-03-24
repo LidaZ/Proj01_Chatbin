@@ -83,23 +83,23 @@ def vliv_postprocessing(path_OCT, volumeDataType, frameSeparationTime ,
     Swiftness: 3D gray scale and RGB image
     
     """
-    print("Processing started")
+    # print("\nProcessing started")
     maxFrameNumber = frameRepeat * blockRepeat * bscanLocationPerBlock # Maximum frame number per Block 
     burstingPeriod = frameRepeat *  bscanLocationPerBlock # Peroid of burst sampling
     numLocation = bscanLocationPerBlock * blockPerVolume # Number of slow scan locations
     
-    print('Processing: ' + path_OCT)
+    # print('\nProcessing: ' + path_OCT)
     
     ## OCT intensity
     octFrames = tifffile.imread(path_OCT)
     height = octFrames.shape[1]
     width = octFrames.shape[2]
     
-    if volumeDataType == 'BSA':
-        print("Data Type = " + str(volumeDataType))
-    
-    elif volumeDataType == 'Ibrahim2021BOE':
-        print("Data Type = " + str(volumeDataType))
+    # if volumeDataType == 'BSA':
+    #     print("Data Type = " + str(volumeDataType))
+    #
+    # elif volumeDataType == 'Ibrahim2021BOE':
+    #     print("Data Type = " + str(volumeDataType))
 
     aliv = np.zeros((numLocation, height, width), dtype=np.float32)
     swift = np.zeros((numLocation, height, width),  dtype=np.float32)
