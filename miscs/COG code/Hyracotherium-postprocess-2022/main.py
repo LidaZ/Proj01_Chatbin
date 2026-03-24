@@ -1,8 +1,8 @@
 import numpy as np
 import tifffile
 import importlib
-import dOct as doct
-importlib.reload(doct)
+
+importlib.reload(dOct)
 import cog
 importlib.reload(cog)
 import imagecolorizer as icz
@@ -33,7 +33,7 @@ blurnumber = 1
 #
 # Set generalized raster parametrers
 #
-rastParam = doct.rasterParamGeneralized(
+rastParam = dOct.rasterParamGeneralized(
     aPerFrame=250,
     frameRepeats=1,  # 1
     bscanPerBlock=1, # 250
@@ -51,8 +51,8 @@ for dataId in range(0, len(inputFilePath)):
     filename = inputFilePath[dataId]
 
     # Create dataVolume and load the volume data from file into "dataVolume" object
-    dataVolume = doct.rasterVolume( filePath=filename, rasterParamGeneralized=rastParam, pixPerA=pixPerA, pixByte=pixByte,
-                                       fileType=fileType, signalScale=signalScale)
+    dataVolume = dOct.rasterVolume(filePath=filename, rasterParamGeneralized=rastParam, pixPerA=pixPerA, pixByte=pixByte,
+                                   fileType=fileType, signalScale=signalScale)
     
     myPath = cog.octFilePath(dataVolume.filePath)
     #
@@ -69,7 +69,7 @@ for dataId in range(0, len(inputFilePath)):
     #
     #   Compute LIV and mean log intensity
     #
-    (LIV, dbInt, logdata) = doct.computeLivAndIntensity(
+    (LIV, dbInt, logdata) = dOct.computeLivAndIntensity(
         dataVolume, bIndexes=bIndexes, motionCorrection=setcorrmethord, register_start_depth=register_start_depth)
     
     LIV = np.swapaxes(LIV, 1, 2)
@@ -95,7 +95,7 @@ for dataId in range(0, len(inputFilePath)):
     #
     #   Compute OCDS and damp (When you don't process OCDS, please comment out the following lines.)
     #
-    Ocds_full = doct.computeOcds(dataVolume, bIndexes = bIndexes, ocdsRanges = [(1,6)], computeDamp = False, frameSeparationTime = frameSeparationTime,
+    Ocds_full = dOct.computeOcds(dataVolume, bIndexes = bIndexes, ocdsRanges = [(1, 6)], computeDamp = False, frameSeparationTime = frameSeparationTime,
                                  motionCorrection = setcorrmethord, register_start_depth = register_start_depth) 
     OCDS = Ocds_full[0]
     # Damp = Ocds_full[1] # if computeDamp = True, please add thie line.

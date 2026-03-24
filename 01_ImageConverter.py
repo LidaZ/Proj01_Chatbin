@@ -18,8 +18,8 @@ import tkinter as tk
 # Add "Temporal analysis" to sys.path to allow importing from its subfolders
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), "Temporal analysis"))
-from General.folder_selection import select_multiple_folders
+# sys.path.append(os.path.join(os.path.dirname(__file__), "Temporal analysis"))
+from Modules.folder_selection import select_multiple_folders
 
 
 """

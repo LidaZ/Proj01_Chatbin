@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     loader = unittest.defaultTestLoader
 
-    tests = loader.discover('.')
+    tests = loader.discover('')
 
     runner = unittest.TextTestRunner()
 
