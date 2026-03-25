@@ -1,7 +1,8 @@
+import sys
 import numpy as np
 import tifffile
 from .variableLIV import *
-from General. colorizeImage import *
+from General.colorizeImage import *
 from tqdm import tqdm
 import cv2
 
@@ -83,7 +84,8 @@ def vliv_postprocessing(path_OCT, volumeDataType, frameSeparationTime ,
     Swiftness: 3D gray scale and RGB image
     
     """
-    # print("\nProcessing started")
+    # print("\nProcessing Started")
+    sys.stderr.write("\n")
     maxFrameNumber = frameRepeat * blockRepeat * bscanLocationPerBlock # Maximum frame number per Block 
     burstingPeriod = frameRepeat *  bscanLocationPerBlock # Peroid of burst sampling
     numLocation = bscanLocationPerBlock * blockPerVolume # Number of slow scan locations
@@ -143,7 +145,8 @@ def vliv_postprocessing(path_OCT, volumeDataType, frameSeparationTime ,
             mag, tau = vlivCPUFitExp(VLIV, possibleMtw, frameSeparationTime, alivInitial, swiftInitial, bounds, use_constraint = False)
 
         aliv [floc] = mag ## aLIV
-        swift [floc] = 1/ tau ## Swiftness
+        # swift [floc] = 1/ tau ## Swiftness todo: 多数情况低SNR时，tau非常小，导致上升斜率无穷大（但最低不也应该1/FPS吗，怎么会是0）。得想想办法
+        with np.errstate(divide='ignore', invalid='ignore'):  swift[floc] = 1 / tau
         VLIV_save[floc,:,:,:] = VLIV ## LIV curve (VLIV)
         if compute_VoV == True:
             VoV_save[floc,:,:,:] = VoV

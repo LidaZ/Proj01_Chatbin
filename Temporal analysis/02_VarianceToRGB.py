@@ -190,7 +190,7 @@ for FileId in range(FileNum):
             ax1['a'].clear();  ax1['a'].imshow(np.swapaxes(mLIV_rgb, 0, 1), vmin=0, vmax=1)
             plt.pause(0.02)
         else: pass
-        sys.stdout.flush()
+        # sys.stdout.flush()
 
     del rawDat
     gc.collect()

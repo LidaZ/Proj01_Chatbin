@@ -30,10 +30,10 @@ class PickContour:
         """Handle mouse click events for point selection."""
         if self.select_not_done:
             if event.button is MouseButton.LEFT:
-                try:
-                    pick_point = (int(event.xdata), int(event.ydata))
-                except TypeError:
-                    raise ValueError("Select within the frame")
+                if event.xdata is None or event.ydata is None:
+                    print("Select within the frame")
+                    return
+                pick_point = (int(event.xdata), int(event.ydata))
                 print(f"Pick coordinate: {int(event.xdata)} {int(event.ydata)};  "
                     f"{self.select_count+1}/{self.contour_points} clicks")
 
@@ -52,24 +52,52 @@ class PickContour:
                 else:   print("No points to cancel.")
 
         else:
-            raise ValueError("Selection status not reset.")
+            print("Selection done. Waiting for confirmation.")
+
+    def on_key(self, event):
+        """Handle key press events for confirmation or reset."""
+        if event.key == 'enter':
+            if not self.select_not_done:
+                self.confirmed = True
+                print("Confirmed selection.")
+        elif event.key == 'r':
+            self.reset_selection = True
+            print("Resetting selection...")
 
     def return_coord_in_frame(self, ax, fig, image, title_text):
-        """Display the image and allow contour selection."""
-        self.pick_stack = []
-        self.select_not_done = True
-        self.select_count = 0
+        """Display the image and allow contour selection with preview and confirmation."""
+        while True:
+            self.pick_stack = []
+            self.select_not_done = True
+            self.select_count = 0
+            self.confirmed = False
+            self.reset_selection = False
 
-        ax.clear()
-        ax.imshow(image, cmap="gray")
-        ax.title.set_text(title_text)
+            ax.clear()
+            ax.imshow(image, cmap="gray")
+            ax.title.set_text(title_text + "\n(Left-click: select, Right-click: undo)")
+            fig.canvas.draw()
 
-        cid_press = fig.canvas.mpl_connect('button_press_event', self.on_press)  # connect the event signal (press, drag, release) to the callback functions
-        while self.select_not_done:
-            plt.pause(0.5)
-        fig.canvas.mpl_disconnect(cid_press)  # disconnect event handler, using the same cid
-        print("Selected contour coordinates:", self.pick_stack)
-        return self.pick_stack
+            cid_press = fig.canvas.mpl_connect('button_press_event', self.on_press)
+            cid_key = fig.canvas.mpl_connect('key_press_event', self.on_key)
+
+            while self.select_not_done and not self.reset_selection:
+                plt.pause(0.1)
+
+            if not self.reset_selection:
+                # Show fitting preview
+                x_smooth, y_smooth, poly = self.polyContour(self.pick_stack, image.shape[1], ax)
+                ax.title.set_text(title_text + "\n(Enter: Confirm, R: Re-select)")
+                fig.canvas.draw()
+
+                while not self.confirmed and not self.reset_selection:
+                    plt.pause(0.1)
+
+            fig.canvas.mpl_disconnect(cid_press)
+            fig.canvas.mpl_disconnect(cid_key)
+
+            if self.confirmed:
+                return self.pick_stack, poly
 
     def polyContour(self, contour_coordinates, dimension_size, ax):
         """Perform polynomial fitting on contour points."""
@@ -143,29 +171,20 @@ ax1 = fig1.subplot_mosaic("ab")
 
 
 # # # Select contour in X-Z plane; then polynomial fitting to obtain the functions of contour and draw on image.
-x_plane_contour_coords = picker.return_coord_in_frame(
+x_plane_contour_coords, xz_poly = picker.return_coord_in_frame(
     ax1["a"], fig1, raw_data[round(dim_y/2), ...], "5 Clicks to contour \n X-Z distortion")
-x_xz_fitted, y_xz_fitted, xz_poly = picker.polyContour(x_plane_contour_coords, dim_y, ax1["a"])
+
 # # # Select contour in Y-Z plane
-y_plane_contour_coords = picker.return_coord_in_frame(
+y_plane_contour_coords, yz_poly = picker.return_coord_in_frame(
     ax1["b"], fig1, raw_data[..., round(dim_x/2)].T, "5 Clicks to contour \n Y-Z distortion")
-x_yz_fitted, y_yz_fitted, yz_poly = picker.polyContour(y_plane_contour_coords, dim_x, ax1["b"])
 
-
+plt.close(fig1)
 # # # Make offset map for registration
 xIndex = np.linspace(0, dim_x-1, dim_x); xMap = xz_poly(xIndex)
 yIndex = np.linspace(0, dim_y-1, dim_y); yMap = yz_poly(yIndex)
 xMap2d = np.tile(xMap - xMap[0], (dim_y, 1))
 yMap2d = np.tile((yMap - yMap[0]), (dim_x, 1)).T
 offSetMap = np.trunc(xMap2d + yMap2d).astype(np.int16) * -1
-
-# # # # =========================
-# # # # Example: register raw_data volume by using offsetMap
-# RegisterVol = picker.fast_roll_along_z(raw_data, offSetMap)
-# # # # # # Check if offset map coordinates with ortho-slices
-# # # # ax1["a"].clear(); ax1["a"].imshow(RegisterVol[124, ...], cmap='gray'); ax1["a"].title.set_text("After X-Z registration")
-# # # # ax1["b"].clear(); ax1["b"].imshow(RegisterVol[..., 245].T, cmap='gray'); ax1["b"].title.set_text("After Y-Z registration")
-# # # # =========================
 
 del raw_data
 
@@ -175,6 +194,7 @@ root = os.path.dirname(stack_file_path)
 
 # if 'view' in DataId:
 volumeRegistor((root + '/' + string_DataId + '_3d_view.tif'), offSetMap, picker)
+
 try:     volumeRegistor((root + '/' + string_DataId + '_IntImg_meanFreq.tif'), offSetMap, picker)
 except FileNotFoundError:     print('Mean frequency mode is off, skip saving as image.')
 try:
