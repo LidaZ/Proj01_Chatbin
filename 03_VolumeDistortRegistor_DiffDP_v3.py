@@ -593,9 +593,9 @@ def main():
         print("No file selected. Exiting.")
         return
 
-    DataId = os.path.basename(stack_file_path)
+    string_DataId, DataExtension_str = os.path.basename(stack_file_path).split('.', 1)
     root = os.path.dirname(stack_file_path)
-    string_DataId = DataId[:-4]
+    # string_DataId = DataId[:-4]
 
     tif_path = root + '/' + string_DataId + '_3d_view.tif'
     print(f"Loading: {tif_path}")
