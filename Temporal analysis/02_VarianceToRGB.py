@@ -61,7 +61,8 @@ FileNum = len(DataFold_list)
 for FileId in range(FileNum):
     """ read linear intensity data from stack. Dimension (Y, Z, X) """
     DataFold = DataFold_list[FileId]
-    DataId = os.path.basename(DataFold);  root = os.path.dirname(DataFold)
+    DataId_str, extension_str = os.path.basename(DataFold).split('.', 1)
+    root = os.path.dirname(DataFold)
     rawDat = tifffile.imread(DataFold)
     # rawDat = tifffile.memmap(DataFold)
     dim_y, dim_z, dim_x = np.shape(rawDat)
@@ -197,11 +198,11 @@ for FileId in range(FileNum):
 
     """ Save image and raw data as tiff stacks """
     if saveImg:
-        tifffile.imwrite(root + '\\' + DataId[:-4] + '_LIV.tif', liv_RgbImg)
-        tifffile.imwrite(root + '\\' + DataId[:-4] + '_LIV_raw.tif', liv_raw)
-        tifffile.imwrite(root + '\\' + DataId[:-4] + '_mLIV.tif', mliv_rgbImg)
-        tifffile.imwrite(root + '\\' + DataId[:-4] + '_mLIV_raw.tif', mliv_raw)
-        try: tifffile.imwrite(root + '\\' + DataId[:-4] + '_meanFreq.tif', meanFreqImg)
+        tifffile.imwrite(root + '\\' + DataId_str + '_LIV.tif', liv_RgbImg)
+        tifffile.imwrite(root + '\\' + DataId_str + '_LIV_raw.tif', liv_raw)
+        tifffile.imwrite(root + '\\' + DataId_str + '_mLIV.tif', mliv_rgbImg)
+        tifffile.imwrite(root + '\\' + DataId_str + '_mLIV_raw.tif', mliv_raw)
+        try: tifffile.imwrite(root + '\\' + DataId_str + '_meanFreq.tif', meanFreqImg)
         except: pass
 
 
