@@ -43,10 +43,10 @@ multiFolderProcess = False when:
 """
 
 
-def return_datatype(dataid):
+def return_datatype(dataid, extension):
     dtype = None
-    if dataid[-4:] == '.dat':  dtype = 'timelapse'
-    elif dataid[-4:] == '.bin':  dtype = '3d'
+    if extension == 'dat':  dtype = 'timelapse'
+    elif extension == 'bin':  dtype = '3d'
     else: dtype = None # raise ValueError('Unrecognizable data type')
     return dtype
 
@@ -108,15 +108,9 @@ proc_batch = 1
 root = tk.Tk(); root.withdraw()  # select data type; hide main window.
 ifRaster = custom_messagebox()
 root.destroy()
-# tk = Tk(); tk.withdraw(); tk.attributes("-topmost", True);
-# ifRaster = messagebox.askyesno(title=None, message='"Yes" if Raster volume; "No" if standard 2D/3D data', parent=tk)
-# tk.destroy()
 if ifRaster: rasterRepeat = Raster_Repeat_num
 else: rasterRepeat = 1
-
-
-if gpu_proc:
-    import cupy as np;  # from cupyx.scipy.ndimage import zoom # import nvTIFF (failed)
+if gpu_proc: import cupy as np;  # from cupyx.scipy.ndimage import zoom # import nvTIFF (failed)
 octRangedB = [-10, 50]  # set dynamic range of log OCT signal display
 if sys_ivs800:  octRangedB = [-15, 20]
 [dim_y, dim_z, dim_x, FrameRate] = [0, 0, 0, 55];  # aspect_ratio = 1
@@ -137,12 +131,13 @@ else:
 
 for FileId in range(FileNum):
     DataFold = DataFold_list[FileId]
-    DataId = os.path.basename(DataFold);   root = os.path.dirname(DataFold)
-    dataType = return_datatype(DataId)
+    DataId_str, extension_str = os.path.basename(DataFold).split('.', 1)
+    root = os.path.dirname(DataFold)
+    dataType = return_datatype(DataId_str, extension_str)
 
     # # # - - - check if Tiff stack file exist - - - # # #
-    checkFile(root + '\\' + DataId[:-4] + '_IntImg.tif')
-    checkFile(root + '\\' + DataId[:-4] + '_3d_view.tif')
+    checkFile(root + '\\' + DataId_str + '_IntImg.tif')
+    checkFile(root + '\\' + DataId_str + '_3d_view.tif')
     sys.stdout.write('\n')
     sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': '+str(FileId+1)+'/'+str(FileNum))
 
@@ -186,7 +181,7 @@ for FileId in range(FileNum):
     # # # - - - create empty arrays for log-int image storage and plot instant for display - - - # # #
     if save_video and dataType == 'timelapse':
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-        out = cv2.VideoWriter(root + '\\' + DataId[:-4] + '_' + dataType + '_video.avi', fourcc, round(FrameRate), (dim_x, dim_z))
+        out = cv2.VideoWriter(root + '\\' + DataId_str + '_' + dataType + '_video.avi', fourcc, round(FrameRate), (dim_x, dim_z))
     if display_proc:
         plt.figure(1, figsize=(dim_x/dim_z*7, 7))  # (dim_x/dim_z*aspect_ratio*7, 7)
         plt.gca().set_axis_off(); plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
@@ -278,7 +273,7 @@ for FileId in range(FileNum):
             octImgVol_linear = np.power(10, octImgVol_rol / 10)  # convert to linear intensity (square of signal amplitude)
             if gpu_proc: octImgVol_sav = octImgVol_linear.get()
             else: octImgVol_sav = octImgVol_linear
-            tifffile.imwrite(root + '\\' + DataId[:-4] + '_IntImg.tif', octImgVol_sav.astype(dtype='float32'),
+            tifffile.imwrite(root + '\\' + DataId_str + '_IntImg.tif', octImgVol_sav.astype(dtype='float32'),
                              append=True, metadata=None) #, bigtiff=True)  # , compression='zlib', compressionargs={'level': 8})
 
         # # # - - - save LogIntImg as Tiff stack - - - # # #
@@ -286,7 +281,7 @@ for FileId in range(FileNum):
             octImgView = (np.clip((octImgVol_rol - octRangedB[0]) / (octRangedB[1] - octRangedB[0]), 0, 1) * 255).astype(dtype='uint8')
             if gpu_proc: octImgView_sav = octImgView.get()
             else: octImgView_sav = octImgView
-            tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + dataType + '_view.tif', octImgView_sav, append=True)
+            tifffile.imwrite(root + '\\' + DataId_str + '_' + dataType + '_view.tif', octImgView_sav, append=True)
 
 
     # # # - - - - - - for raster scan, compile the first image of each repeat as the 3d_view LogIntImg - - - # # #
@@ -295,15 +290,17 @@ for FileId in range(FileNum):
         octImgView_raster = (np.clip((octImgVol_raster_roll - octRangedB[0]) / (octRangedB[1] - octRangedB[0]),0, 1) * 255).astype(dtype='uint8')
         if gpu_proc: octImgView_sav = octImgView_raster.get()
         else: octImgView_sav = octImgView_raster
-        tifffile.imwrite(root + '\\' + DataId[:-4] + '_' + dataType + '_view.tif', octImgView_sav)
+        tifffile.imwrite(root + '\\' + DataId_str + '_' + dataType + '_view.tif', octImgView_sav)
 
     if save_video and dataType == 'timelapse':
         out.release();     cv2.destroyAllWindows()
 
 
 if 'rawDat' in globals(): del rawDat
-del octImgVol_rol
-del octImgVol
-file.close()
-gc.collect()
 if gpu_proc: np._default_memory_pool.free_all_blocks()
+try:
+    del octImgVol_rol
+    del octImgVol
+    file.close()
+    gc.collect()
+except NameError: pass
