@@ -138,6 +138,8 @@ for FileId in range(FileNum):
     # # # - - - check if Tiff stack file exist - - - # # #
     checkFile(root + '\\' + DataId_str + '_IntImg.tif')
     checkFile(root + '\\' + DataId_str + '_3d_view.tif')
+    checkFile(root + '\\' + DataId_str + '_3d_LinInt.tif')
+    checkFile(root + '\\' + DataId_str + '_3d_LogInt.tif')
     sys.stdout.write('\n')
     sys.stdout.write("[%-20s] %d%%" % ('=' * int(0), 0) + ' initialize processing' + ': '+str(FileId+1)+'/'+str(FileNum))
 
@@ -273,7 +275,7 @@ for FileId in range(FileNum):
             octImgVol_linear = np.power(10, octImgVol_rol / 10)  # convert to linear intensity (square of signal amplitude)
             if gpu_proc: octImgVol_sav = octImgVol_linear.get()
             else: octImgVol_sav = octImgVol_linear
-            tifffile.imwrite(root + '\\' + DataId_str + '_IntImg.tif', octImgVol_sav.astype(dtype='float32'),
+            tifffile.imwrite(root + '\\' + DataId_str + '_' + dataType + '_LinInt.tif', octImgVol_sav.astype(dtype='float32'),
                              append=True, metadata=None) #, bigtiff=True)  # , compression='zlib', compressionargs={'level': 8})
 
         # # # - - - save LogIntImg as Tiff stack - - - # # #
@@ -281,7 +283,7 @@ for FileId in range(FileNum):
             octImgView = (np.clip((octImgVol_rol - octRangedB[0]) / (octRangedB[1] - octRangedB[0]), 0, 1) * 255).astype(dtype='uint8')
             if gpu_proc: octImgView_sav = octImgView.get()
             else: octImgView_sav = octImgView
-            tifffile.imwrite(root + '\\' + DataId_str + '_' + dataType + '_view.tif', octImgView_sav, append=True)
+            tifffile.imwrite(root + '\\' + DataId_str + '_' + dataType + '_LogInt.tif', octImgView_sav, append=True)
 
 
     # # # - - - - - - for raster scan, compile the first image of each repeat as the 3d_view LogIntImg - - - # # #
@@ -290,7 +292,7 @@ for FileId in range(FileNum):
         octImgView_raster = (np.clip((octImgVol_raster_roll - octRangedB[0]) / (octRangedB[1] - octRangedB[0]),0, 1) * 255).astype(dtype='uint8')
         if gpu_proc: octImgView_sav = octImgView_raster.get()
         else: octImgView_sav = octImgView_raster
-        tifffile.imwrite(root + '\\' + DataId_str + '_' + dataType + '_view.tif', octImgView_sav)
+        tifffile.imwrite(root + '\\' + DataId_str + '_' + dataType + '_LogInt.tif', octImgView_sav)
 
     if save_video and dataType == 'timelapse':
         out.release();     cv2.destroyAllWindows()

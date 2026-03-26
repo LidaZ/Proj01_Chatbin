@@ -48,7 +48,7 @@ Is_meanFreq_ToSaturationWithLIV = False
 
 """ Choose the parent folder to browse all data folders (Data.bin) """
 Fold_list = select_multiple_folders()
-extension = ['_IntImg.tif']
+extension = ['_IntImg.tif', '_LinInt.tif']
 DataFold_list = []
 for item in Fold_list:
     for n in os.listdir(item):
