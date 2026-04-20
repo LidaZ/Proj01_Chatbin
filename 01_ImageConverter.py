@@ -270,12 +270,12 @@ for FileId in range(FileNum):
         sys.stdout.write('\r')
         sys.stdout.write("[%-20s] %d%%" % ('=' * int(20 * j), 100 * j) + ' saving stack images' + ': '+str(FileId+1)+'/'+str(FileNum))
         time.sleep(0.01)
-        octImgVol_rol = np.rollaxis(octImgVol[:, :, :], 0, 1)
+        octImgVol_rol = np.rollaxis(octImgVol[:, :, :], 0, 1) - 0  # -9.5 dB模拟光强降低一半?
         if save_Int_linear:
             octImgVol_linear = np.power(10, octImgVol_rol / 10)  # convert to linear intensity (square of signal amplitude)
             if gpu_proc: octImgVol_sav = octImgVol_linear.get()
             else: octImgVol_sav = octImgVol_linear
-            tifffile.imwrite(root + '\\' + DataId_str + '_' + dataType + '_IntImg.tif', octImgVol_sav.astype(dtype='float32'),
+            tifffile.imwrite(root + '\\' + DataId_str + '_IntImg.tif', octImgVol_sav.astype(dtype='float32'),
                              append=True, metadata=None) #, bigtiff=True)  # , compression='zlib', compressionargs={'level': 8})
 
         # # # - - - save LogIntImg as Tiff stack - - - # # #
@@ -288,7 +288,7 @@ for FileId in range(FileNum):
 
     # # # - - - - - - for raster scan, compile the first image of each repeat as the 3d_view LogIntImg - - - # # #
     if save_Int_log and rasterRepeat > 1:
-        octImgVol_raster_roll = np.rollaxis(octImgVol_raster[:, :, :], 0, 1)
+        octImgVol_raster_roll = np.rollaxis(octImgVol_raster[:, :, :], 0, 1) - 0  # -9.5 dB模拟光强降低一半?
         octImgView_raster = (np.clip((octImgVol_raster_roll - octRangedB[0]) / (octRangedB[1] - octRangedB[0]),0, 1) * 255).astype(dtype='uint8')
         if gpu_proc: octImgView_sav = octImgView_raster.get()
         else: octImgView_sav = octImgView_raster

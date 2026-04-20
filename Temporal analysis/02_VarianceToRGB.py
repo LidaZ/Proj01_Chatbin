@@ -31,7 +31,7 @@ frames_per_second = 55  # 30
 rasterRepeat = 16
 rasterRepeat_cal = rasterRepeat  # Can be manually set to a smaller value, e.g. shorter time window.
 SYSTEM_NAME = 'ivs800'  # 'ivs800', 'ivs2000'
-yasuno_aLiv_swiftness = False
+yasuno_aLiv_swiftness = True
 saveImg = True
 Is_compute_meanFreq = False  # False: variance-only; True: variance + mean frequency.
 

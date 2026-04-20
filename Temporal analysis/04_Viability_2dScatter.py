@@ -5,8 +5,9 @@ import glob
 from tkinter import *
 from tkinter import filedialog
 import matplotlib
-from fontTools.unicodedata import block
-
+# from fontTools.unicodedata import block
+# from astropy.visualization import LogStretch
+# from astropy.visualization.mpl_normalize import ImageNormalize
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
@@ -139,7 +140,7 @@ def config_metrics_folderpath(string_DataId, first_metric_horizontal, second_met
         case 'mean intensity':
             second_metric_label = 'Mean intensity (dB)'
             second_metric_filePath = root + '/' + string_DataId + '_3d_view.tif'
-            second_metric_range = octRangedB
+            second_metric_range = octRangedB_display
         case _:
             print('Error: second metric is not available: ', second_metric_horizontal)
 
@@ -149,20 +150,21 @@ def load_and_display_enface_image(mLivFilePath, ax1):
 
 
 
-zSlice = [231, 233]  # manual z slicing range to select depth region for computing viability
+zSlice = [436, 437]  # manual z slicing range to select depth region for computing viability
 SYSTEM_ID = 'ivs800'  # 'ivs800' or 'ivs2000'
 plot_mode = 'scatter'  # 'counting' or 'scatter'
-first_metric_horizontal = 'aliv'  # 'aLIV', 'liv', or 'mliv'
+first_metric_horizontal = 'liv'  # 'aLIV', 'liv', or 'mliv'
 second_metric_horizontal = 'mean intensity'  # 'swiftness', 'mean frequency' or 'mean intensity'. Only available when switch_scatter2D == True.
 
-int_threshold_dB = -5.  # Threshold for log intensity to segment cell regions. If cellpose-3 enabled, it's applied to a normalized image, with typical value of ~0.17.
+int_threshold_dB = -10.  # Threshold for log intensity to segment cell regions. If cellpose-3 enabled, it's applied to a normalized image, with typical value of ~0.17.
 viability_liv_threshold = 0.18  # 'mLIV': 0.18; 'LIV': ?; 'aLIV': ?
+
 octRangedB = (-15, 20) if SYSTEM_ID == 'ivs800' else (0, 50) if SYSTEM_ID == 'ivs2000' else print('Error: system ID is not supported: ', SYSTEM_ID)
-aliv_range = (0, 35);  swiftness_range = (0, 50);  exclude_inf_swiftness = False
+octRangedB_display = (int_threshold_dB, octRangedB[1])
+aliv_range = (0, 35);  swiftness_range = (0, 50);  exclude_inf_swiftness = True
 liv_range = (0, 45)
 mliv_range = (0, 1)
 meanFreq_range = (0, 6)
-
 manual_pick = False  # Enable manual pixel labeling on ax1['a']. Automatic display all masked pixels when set to False.
 
 """ Open file to select first metric. aliv.tif > aliv, _LIV.tif > mLiv. """
@@ -285,7 +287,7 @@ for index_z in z_range:
             valid_mask = ~np.isnan(y_first_metric) & ~np.isnan(x_second_metric)  # np.isinf(valid_mask).any() > False
             if second_metric_horizontal == 'mean intensity': x_second_metric = convert_arr_grayscale_to_dB(x_second_metric, octRangedB)
             # # # (1) 所有mask点绘制 scatter，使用mpl_scatter_density
-            self_cmap = LinearSegmentedColormap.from_list('self_cmap', [(0, '#ffffff'), (1e-20, '#160c57'),
+            self_cmap = LinearSegmentedColormap.from_list('self_cmap', [(0, '#ffffff'), (0.07, '#ffffff'), (0.071, '#160c57'),
                 (0.2, '#2469fd'), (0.4, '#24fdfd'), (0.6, '#94fd24'), (0.8, '#fdce24'), (1, '#fd2f24'), ], N=256)
             density = ax1['d'].scatter_density(x_second_metric[valid_mask], y_first_metric[valid_mask], cmap=self_cmap)
             try:  cb.remove()
@@ -309,9 +311,10 @@ for index_z in z_range:
                 """ Make scatter plot of all masked pixels. """
                 scatter_color = 'blue'
                 y_masked = y_first_metric[valid_mask];   x_masked = x_second_metric[valid_mask]  # already converted to dB
-                density_dead = ax2['1'].scatter_density(x_masked, y_masked, cmap=self_cmap) # color=scatter_color)  # cmap=self_cmap)
-                try:  cb2.remove()
-                except NameError:  pass
+                # norm = ImageNormalize(vmin=first_metric_range[0], vmax=first_metric_range[1], stretch=LogStretch())
+                density_dead = ax2['1'].scatter_density(x_masked, y_masked, cmap=self_cmap, dpi=25) #, norm=norm) # color=scatter_color)  # cmap=self_cmap)
+                # try:  cb2.remove()
+                # except NameError:  pass
                 cb2 = fig2.colorbar(density, ax=ax2['1'], label='Scatter density')
                 """ Adjust axes. """
                 ax2['1'].set_ylabel(first_metric_label)
